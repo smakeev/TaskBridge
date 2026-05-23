@@ -1,6 +1,5 @@
 package com.taskbridge.core.interactors.navigation
 
-import com.taskbridge.core.TaskBridge
 import com.taskbridge.core.models.navigation.AppTab
 import com.taskbridge.core.models.navigation.NavigationPath
 import com.taskbridge.core.usecases.NavigationStateObserverUseCase
@@ -9,14 +8,12 @@ import kotlinx.coroutines.flow.Flow
 
 /**
  * Platform-facing interactor for navigation.
- * Simplifies access to navigation use cases for Android and iOS.
+ * Uses specific use cases provided by the CoreAssembler.
  */
 public class NavigationInteractor(
-    private val taskBridge: TaskBridge
+    private val selectTabUseCase: SelectTabUseCase,
+    private val observerUseCase: NavigationStateObserverUseCase
 ) {
-    private val selectTabUseCase = taskBridge.getUseCase(SelectTabUseCase::class)
-    private val observerUseCase = taskBridge.getUseCase(NavigationStateObserverUseCase::class)
-
     public val activePath: Flow<NavigationPath?> = observerUseCase.subscribeOnActivePath()
     public val currentTab: Flow<AppTab> = observerUseCase.subscribeOnCurrentTab()
 

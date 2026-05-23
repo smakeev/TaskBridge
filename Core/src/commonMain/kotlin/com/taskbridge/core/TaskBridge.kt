@@ -1,6 +1,7 @@
 package com.taskbridge.core
 
 import com.taskbridge.core.composition.CoreAssembler
+import com.taskbridge.core.interactors.navigation.NavigationInteractor
 import kotlin.reflect.KClass
 
 /**
@@ -11,9 +12,16 @@ public class TaskBridge {
     private val assembler = CoreAssembler()
 
     /**
-     * Retrieves a use case by its type.
+     * Provides access to the navigation interactor.
      */
-    public fun <T : Any> getUseCase(type: KClass<T>): T {
+    public fun navigationInteractor(): NavigationInteractor {
+        return assembler.navigationInteractor()
+    }
+
+    /**
+     * Retrieves a use case by its type. Internal to Core.
+     */
+    internal fun <T : Any> getUseCase(type: KClass<T>): T {
         return assembler.useCases.get(assembler, type)
     }
 
