@@ -1,0 +1,32 @@
+.gradle
+build/
+*/build/
+.idea/
+*.iml
+local.properties
+.DS_Store
+
+# Android
+*.ap_
+*.dex
+*.class
+bin/
+gen/
+out/
+captures/
+.externalNativeBuild
+.cxx
+proguard-project.txt
+project.properties
+
+# iOS
+*.xcworkspace
+xcuserdata/
+DerivedData/
+*.moved-aside
+*.xcuserstate
+ios/Podfile.lock
+ios/Pods/
+
+# Kotlin Multiplatform
+.kotlin/
