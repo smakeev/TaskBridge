@@ -1,6 +1,6 @@
 package com.taskbridge.core
 
-class TaskCore {
+class TaskBridge {
     val message: String = "Hello World from TaskBridge Core!"
     
     constructor()

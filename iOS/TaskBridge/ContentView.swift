@@ -2,11 +2,11 @@ import SwiftUI
 import TaskBridgeCore
 
 struct ContentView: View {
-    let taskCore = TaskCore()
+    let taskBridge = TaskBridge()
     
     var body: some View {
         VStack {
-            Text(taskCore.message)
+            Text(taskBridge.message)
                 .padding()
         }
     }
