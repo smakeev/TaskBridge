@@ -1,6 +1,7 @@
 package com.taskbridge.core.interactors.navigation
 
 import com.taskbridge.core.models.navigation.AppTab
+import com.taskbridge.core.models.navigation.NavigationOverlay
 import com.taskbridge.core.models.navigation.NavigationPath
 import com.taskbridge.core.usecases.NavigationStateObserverUseCase
 import com.taskbridge.core.usecases.SelectTabUseCase
@@ -16,6 +17,7 @@ public class NavigationInteractor(
 ) {
     public val activePath: Flow<NavigationPath?> = observerUseCase.subscribeOnActivePath()
     public val currentTab: Flow<AppTab> = observerUseCase.subscribeOnCurrentTab()
+    public val overlay: Flow<NavigationOverlay?> = observerUseCase.subscribeOnOverlay()
 
     public suspend fun selectTab(tab: AppTab) {
         selectTabUseCase.selectTab(tab)
@@ -27,5 +29,9 @@ public class NavigationInteractor(
 
     public suspend fun fetchCurrentTab(): AppTab {
         return observerUseCase.fetchCurrentTab()
+    }
+
+    public suspend fun fetchOverlay(): NavigationOverlay? {
+        return observerUseCase.fetchOverlay()
     }
 }

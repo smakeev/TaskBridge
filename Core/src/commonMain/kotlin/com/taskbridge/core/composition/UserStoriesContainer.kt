@@ -1,9 +1,7 @@
 package com.taskbridge.core.composition
 
-import com.taskbridge.core.stories.GetAppStateServiceStory
-import com.taskbridge.core.stories.SelectTabStory
-import com.taskbridge.core.stories.SubscribeToActivePathStory
-import com.taskbridge.core.stories.SubscribeToNavigationStory
+import com.taskbridge.core.stories.*
+import kotlin.reflect.KClass
 
 /**
  * Container for internal user stories.
@@ -17,4 +15,6 @@ internal class UserStoriesContainer {
     fun subscribeToNavigation(assembler: CoreAssembler): SubscribeToNavigationStory = SubscribeToNavigationStory(assembler)
 
     fun subscribeToActivePath(assembler: CoreAssembler): SubscribeToActivePathStory = SubscribeToActivePathStory(assembler)
+
+    fun subscribeToOverlay(assembler: CoreAssembler): SubscribeToOverlayStory = SubscribeToOverlayStory(assembler)
 }

@@ -2,6 +2,7 @@ package com.taskbridge.core.usecases
 
 import com.taskbridge.core.composition.CoreAssembler
 import com.taskbridge.core.models.navigation.AppTab
+import com.taskbridge.core.models.navigation.NavigationOverlay
 import com.taskbridge.core.models.navigation.NavigationPath
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -22,11 +23,19 @@ public class NavigationStateObserverUseCase internal constructor(
             .map { it.selectedTab }
     }
 
+    public fun subscribeOnOverlay(): Flow<NavigationOverlay?> {
+        return assembler.stories.subscribeToOverlay(assembler)()
+    }
+
     public suspend fun fetchActivePath(): NavigationPath? {
         return subscribeOnActivePath().first()
     }
 
     public suspend fun fetchCurrentTab(): AppTab {
         return subscribeOnCurrentTab().first()
+    }
+
+    public suspend fun fetchOverlay(): NavigationOverlay? {
+        return subscribeOnOverlay().first()
     }
 }

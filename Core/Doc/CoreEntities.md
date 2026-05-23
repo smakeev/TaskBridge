@@ -15,9 +15,11 @@ High-level bridges used by the platform to interact with the Core.
 Public class providing a simplified interface for navigation logic. Assembled by the `CoreAssembler`.
 - `activePath`: `Flow<NavigationPath?>`
 - `currentTab`: `Flow<AppTab>`
+- `overlay`: `Flow<NavigationOverlay?>`
 - `selectTab(tab: AppTab)`: Selects the specified tab.
 - `fetchActivePath()`: Suspends and returns the current path.
 - `fetchCurrentTab()`: Suspends and returns the current tab.
+- `fetchOverlay()`: Suspends and returns the current overlay.
 
 ---
 
@@ -51,6 +53,9 @@ Provides a `Flow<NavigationState>` derived from the `AppStateService`.
 ### SubscribeToActivePathStory
 Provides a `Flow<NavigationPath?>` derived from the navigation state.
 
+### SubscribeToOverlayStory
+Provides a `Flow<NavigationOverlay?>` derived from the navigation state.
+
 ---
 
 ## Use Cases (Internal to Core)
@@ -62,8 +67,10 @@ Handles tab selection logic.
 Observes or fetches navigation-related state.
 - `subscribeOnActivePath()`: Returns a `Flow<NavigationPath?>`.
 - `subscribeOnCurrentTab()`: Returns a `Flow<AppTab>`.
+- `subscribeOnOverlay()`: Returns a `Flow<NavigationOverlay?>`.
 - `fetchActivePath()`: Suspends until the first `NavigationPath?` is available.
 - `fetchCurrentTab()`: Suspends until the first `AppTab` is available.
+- `fetchOverlay()`: Suspends until the first `NavigationOverlay?` is available.
 
 ---
 
