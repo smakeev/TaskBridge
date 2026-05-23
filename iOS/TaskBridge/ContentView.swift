@@ -5,9 +5,7 @@ struct ContentView: View {
     let taskBridge = TaskBridge()
     
     var body: some View {
-        VStack {
-            Text(taskBridge.message)
-                .padding()
-        }
+        Text("TaskBridge Core Initialized")
+            .padding()
     }
 }
