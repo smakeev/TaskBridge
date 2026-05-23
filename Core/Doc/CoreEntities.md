@@ -7,6 +7,32 @@ This document provides a comprehensive description of all entities defined withi
 The main entry point for the Core logic.
 - `message`: A sample string property used for initial verification of the KMP setup.
 
+## Services
+### Service
+A base interface for all application services.
+
+### BaseStatefulService
+An abstract base class for services that maintain state. It implements the "Actor" pattern using a `Channel` and a `launch` loop to ensure that all state updates are processed sequentially and thread-safely. It uses a `suspend` handleCommand function to allow for asynchronous state transitions.
+
+### ServiceCommand
+A marker interface for commands that can be processed by services.
+
+### AppStateCommand
+A sealed interface representing commands for the `AppStateService`.
+- `SelectTab(tab: AppTab)`: Command to switch the currently selected application tab.
+
+### ServiceData
+A marker interface for data structures used by services.
+
+### StatefulService
+A generic interface for services that maintain a state (`ServiceData`) and process commands (`ServiceCommand`). It exposes the state via a `StateFlow`.
+
+### AppStateServiceData
+A data class containing the global application state, primarily the navigation state. It provides a default initial state where all tabs are initialized to their respective roots.
+
+### AppStateService (Internal)
+An internal implementation of `BaseStatefulService` that manages the `AppStateServiceData`.
+
 ---
 
 ## Navigation
