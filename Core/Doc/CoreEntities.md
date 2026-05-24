@@ -120,3 +120,17 @@ A recursive data class representing a task item within a template. It can contai
 
 #### TaskTemplate
 A data class representing a full task template, including its metadata and the root of its task tree.
+
+---
+
+## Network DTOs
+Internal Data Transfer Objects used for serialization.
+
+### TaskTemplateDto
+A serializable version of `TaskTemplate`. Provides a `toDomain()` mapping function.
+
+### TemplateTaskItemDto
+A serializable version of `TemplateTaskItem`. Provides a `toDomain()` mapping function.
+
+### TemplateTaskTypeDto
+A serializable enum for `TemplateTaskType`. Supports custom serial names for JSON compatibility.
