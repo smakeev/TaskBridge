@@ -3,12 +3,15 @@ package com.taskbridge.core
 import com.taskbridge.core.composition.CoreAssembler
 import com.taskbridge.core.interactors.navigation.NavigationInteractor
 import com.taskbridge.core.interactors.templates.TemplatesInteractor
+import com.taskbridge.core.storage.tasks.PlatformDependencies
 import kotlin.reflect.KClass
 
 /**
  * Main entry point for the Core module.
  */
-public class TaskBridge {
+public class TaskBridge(
+    platformDependencies: PlatformDependencies
+) {
 
     public companion object {
         public const val TEMPLATES_URL: String = "https://raw.githubusercontent.com/smakeev/TaskBridge/main/docs/mock-api/templates.json"
@@ -20,7 +23,7 @@ public class TaskBridge {
         public const val TEMPLATES_TTL_MILLIS: Long = 10 * 60 * 1000L // 10 minutes
     }
 
-    private val assembler = CoreAssembler()
+    private val assembler = CoreAssembler(platformDependencies)
 
     /**
      * Provides access to the navigation interactor.
@@ -42,6 +45,4 @@ public class TaskBridge {
     internal fun <T : Any> getUseCase(type: KClass<T>): T {
         return assembler.useCases.get(assembler, type)
     }
-
-    constructor()
 }

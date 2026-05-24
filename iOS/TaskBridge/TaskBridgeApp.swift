@@ -28,7 +28,8 @@ struct TaskBridgeApp: App {
     private let taskTemplatesRepository: TaskTemplatesRepository
     
     init() {
-        self.taskBridge = TaskBridge()
+        let platformDependencies = PlatformDependencies()
+        self.taskBridge = TaskBridge(platformDependencies: platformDependencies)
         
         let navigationInteractor = taskBridge.navigationInteractor()
         self.navigationRepository = NavigationRepositoryImpl(interactor: navigationInteractor)

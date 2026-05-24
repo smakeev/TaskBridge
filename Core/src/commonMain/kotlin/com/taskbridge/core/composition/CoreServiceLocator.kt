@@ -5,6 +5,7 @@ import com.taskbridge.core.network.JsonRequestManager
 import com.taskbridge.core.services.appstate.AppStateService
 import com.taskbridge.core.services.network.NetworkService
 import com.taskbridge.core.services.remote.RemoteResourceService
+import com.taskbridge.core.storage.tasks.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -14,7 +15,9 @@ import kotlinx.datetime.Clock
  * Locator for internal services.
  * Creates and keeps service instances lazily.
  */
-internal class CoreServiceLocator {
+internal class CoreServiceLocator(
+    private val platformDependencies: PlatformDependencies
+) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     private val appStateServiceInstance: AppStateService by lazy {
@@ -40,9 +43,19 @@ internal class CoreServiceLocator {
         )
     }
 
+    private val taskDatabaseInstance: TaskDatabase by lazy {
+        getDatabaseBuilder(platformDependencies).build()
+    }
+
+    private val taskStorageManagerInstance: TaskStorageManager by lazy {
+        TaskStorageManager(taskDatabaseInstance.taskDao())
+    }
+
     fun appStateService(): AppStateService = appStateServiceInstance
 
     fun networkService(): NetworkService = networkServiceInstance
 
     fun remoteResourceService(): RemoteResourceService = remoteResourceServiceInstance
+
+    fun taskStorageManager(): TaskStorageManager = taskStorageManagerInstance
 }

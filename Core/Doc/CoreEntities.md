@@ -185,7 +185,16 @@ The central task domain model. It supports recursive parent-child structures for
 Internal components for persistence.
 
 ### TaskEntity
-A flat, relational-oriented data structure for persisting tasks (e.g., in Room). It does not contain recursive children but includes a `parentId` and `sortOrder`.
+A Room entity for persisting tasks. It uses flat relational storage with a `parentId` to represent tree relationships and a `sortOrder` for sibling ordering.
+
+### TaskDao
+Room Data Access Object for task operations, including CRUD and reactive observation via `Flow`.
+
+### TaskDatabase
+The main Room database class for the TaskBridge Core.
+
+### TaskStorageManager
+A task-specific manager that encapsulates Room details and uses the `TaskEntityMapper` to bridge between flat entities and recursive domain trees.
 
 ### TaskEntityMapper
 Responsible for flattening the recursive `TaskItem` tree into a list of `TaskEntity` for storage and reconstructing the tree back into domain models for the application.

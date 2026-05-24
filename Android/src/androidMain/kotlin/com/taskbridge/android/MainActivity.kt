@@ -23,13 +23,15 @@ import com.taskbridge.android.ui.navigation.TasksNavigationScreen
 import com.taskbridge.android.ui.navigation.TemplatesNavigationScreen
 import com.taskbridge.core.TaskBridge
 import com.taskbridge.core.models.navigation.AppTab
+import com.taskbridge.core.storage.tasks.PlatformDependencies
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        val taskBridge = TaskBridge()
+        val platformDependencies = PlatformDependencies(this)
+        val taskBridge = TaskBridge(platformDependencies)
         val navigationInteractor = taskBridge.navigationInteractor()
         val templatesInteractor = taskBridge.templatesInteractor()
         

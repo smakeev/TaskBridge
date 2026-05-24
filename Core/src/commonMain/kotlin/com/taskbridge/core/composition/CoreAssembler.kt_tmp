@@ -1,0 +1,17 @@
+package com.taskbridge.core.composition
+
+import com.taskbridge.core.storage.tasks.PlatformDependencies
+
+/**
+ * Internal composition root.
+ * Owns the service locator, containers, and provides interactor assembly.
+ */
+internal class CoreAssembler(
+    val platformDependencies: PlatformDependencies
+) {
+    val services = CoreServiceLocator(platformDependencies)
+    val stories = UserStoriesContainer()
+    val useCases = UseCaseContainer()
+
+    // ... (rest of methods remain the same, but they take this assembler as argument)
+}
