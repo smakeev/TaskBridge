@@ -12,7 +12,13 @@ import kotlin.reflect.KClass
  */
 internal class UserStoriesContainer {
     fun selectTab(assembler: CoreAssembler): SelectTabStory = SelectTabStory(assembler)
-    
+
+    fun pushDestination(assembler: CoreAssembler): PushDestinationStory = PushDestinationStory(assembler)
+
+    fun popDestination(assembler: CoreAssembler): PopDestinationStory = PopDestinationStory(assembler)
+
+    fun pullToRoot(assembler: CoreAssembler): PullToRootStory = PullToRootStory(assembler)
+
     fun getAppStateService(assembler: CoreAssembler): GetAppStateServiceStory = GetAppStateServiceStory(assembler)
 
     fun subscribeToNavigation(assembler: CoreAssembler): SubscribeToNavigationStory = SubscribeToNavigationStory(assembler)
