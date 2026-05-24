@@ -1,5 +1,6 @@
 package com.taskbridge.core.services.common
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
@@ -7,10 +8,10 @@ import kotlinx.coroutines.launch
 
 /**
  * Abstract base class for stateless services.
- * Implements a sequential request processing loop using a mailbox pattern.
+ * Implements a concurrent request processing loop using a mailbox pattern.
  */
 internal abstract class BaseStatelessService<R : ServiceRequest, T>(
-    scope: CoroutineScope
+    private val scope: CoroutineScope
 ) : StatelessService<R, T> {
 
     private val mailbox = Channel<Envelope<R, T>>(Channel.UNLIMITED)
@@ -21,11 +22,20 @@ internal abstract class BaseStatelessService<R : ServiceRequest, T>(
                 if (envelope.deferred.isCancelled) {
                     continue
                 }
-                try {
-                    val result = handleRequest(envelope.request)
-                    envelope.deferred.complete(result)
-                } catch (e: Throwable) {
-                    envelope.deferred.completeExceptionally(e)
+
+                val job = scope.launch {
+                    try {
+                        val result = handleRequest(envelope.request)
+                        envelope.deferred.complete(result)
+                    } catch (e: Throwable) {
+                        envelope.deferred.completeExceptionally(e)
+                    }
+                }
+
+                envelope.deferred.invokeOnCompletion { throwable ->
+                    if (throwable is CancellationException) {
+                        job.cancel()
+                    }
                 }
             }
         }
@@ -39,7 +49,7 @@ internal abstract class BaseStatelessService<R : ServiceRequest, T>(
 
     /**
      * Implementation-specific request handling logic.
-     * Called sequentially for each request.
+     * Called concurrently for each request received from the mailbox.
      */
     protected abstract suspend fun handleRequest(request: R): T
 

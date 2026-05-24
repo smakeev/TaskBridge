@@ -6,7 +6,7 @@ import kotlinx.coroutines.CoroutineScope
 
 /**
  * Internal stateless service for network operations.
- * Wraps [JsonRequestManager] and provides sequential request handling.
+ * Wraps [JsonRequestManager] and provides concurrent request handling.
  * Does not cache completed results.
  */
 internal class NetworkService(
@@ -20,9 +20,9 @@ internal class NetworkService(
      */
     suspend inline fun <reified T> loadJson(url: String): T {
         val request = NetworkRequest.ExecuteJson(
-            url = url,
             loader = { requestManager.loadJson<T>(url) }
         )
+        @Suppress("UNCHECKED_CAST")
         return execute(request) as T
     }
 
