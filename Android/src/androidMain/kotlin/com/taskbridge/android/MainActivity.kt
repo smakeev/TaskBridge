@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.taskbridge.android.repository.NavigationRepository
 import com.taskbridge.android.repository.impl.NavigationRepositoryImpl
 import com.taskbridge.core.TaskBridge
 import com.taskbridge.core.models.navigation.AppTab
@@ -26,11 +27,11 @@ class MainActivity : ComponentActivity() {
         
         val taskBridge = TaskBridge()
         val navigationInteractor = taskBridge.navigationInteractor()
-        val navigationRepository = NavigationRepositoryImpl(navigationInteractor)
+        val repository: NavigationRepository = NavigationRepositoryImpl(navigationInteractor)
 
         setContent {
             val scope = rememberCoroutineScope()
-            var currentTab by remember { mutableStateOf(AppTab.TASKS) }
+            val currentTab by repository.currentTab.collectAsState(initial = AppTab.TASKS)
 
             MaterialTheme {
                 Scaffold(
@@ -40,9 +41,8 @@ class MainActivity : ComponentActivity() {
                                 NavigationBarItem(
                                     selected = currentTab == tab,
                                     onClick = {
-                                        currentTab = tab
                                         scope.launch {
-                                            navigationRepository.selectTab(tab)
+                                            repository.selectTab(tab)
                                         }
                                     },
                                     icon = {
