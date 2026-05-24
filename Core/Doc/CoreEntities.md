@@ -29,6 +29,14 @@ Public platform-facing interactor for managing task templates.
 - `loadTemplates()`: Triggers loading if cache is expired.
 - `forceLoadTemplates()`: Forcefully reloads templates.
 
+### TasksInteractor
+Public platform-facing interactor for managing tasks.
+- `tasksState`: `Flow<TasksState>`
+- `loadTasks()`: Loads tasks from storage.
+- `createTask(task: TaskItem)`: Persists a new task tree.
+- `replaceTask(task: TaskItem)`: Replaces an existing task's subtree.
+- `deleteTaskTree(taskId: TaskId)`: Recursively deletes a task and its descendants.
+
 ---
 
 ## Composition
@@ -118,7 +126,15 @@ Observes or fetches navigation-related state.
 Internal use case for managing task templates. Maps generic remote resource state to domain-specific templates state.
 - `loadTemplates()`: Triggers loading using `TEMPLATES_URL` and `TEMPLATES_TTL_MILLIS`.
 - `forceLoadTemplates()`: Forcefully reloads templates.
-- `observeTemplates()`: Returns a `Flow<TaskTemplatesState>`.
+- `observeTemplatesResource()`: Returns a `Flow<RemoteResourceEntry?>`.
+
+### TasksUseCase
+Internal use case for managing tasks. Orchestrates task stories to provide domain-level operations.
+- `loadTasks()`: Triggers task loading.
+- `createTask(task: TaskItem)`: Triggers task creation.
+- `replaceTask(task: TaskItem)`: Triggers task replacement.
+- `deleteTaskTree(taskId: TaskId)`: Triggers task subtree deletion.
+- `observeTasks()`: Returns a `Flow<TasksServiceData>`.
 
 ---
 
@@ -201,6 +217,9 @@ A value class for tracking progress (0 to 100).
 
 #### TaskItem
 The central task domain model. It supports recursive parent-child structures for `CONTAINER` tasks via the `children` list. It also includes an explicit `parentId` relation to support persistence, identity linkage, and future tree operations. Completion state (`isCompleted`) is derived based on the task type (e.g., containers are completed only if all their children are completed).
+
+#### TasksState
+Public state model for tasks, including the task tree list, loading status, and error messages.
 
 ---
 

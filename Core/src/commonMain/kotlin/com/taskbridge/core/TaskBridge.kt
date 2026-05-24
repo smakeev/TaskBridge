@@ -2,6 +2,7 @@ package com.taskbridge.core
 
 import com.taskbridge.core.composition.CoreAssembler
 import com.taskbridge.core.interactors.navigation.NavigationInteractor
+import com.taskbridge.core.interactors.tasks.TasksInteractor
 import com.taskbridge.core.interactors.templates.TemplatesInteractor
 import com.taskbridge.core.storage.tasks.PlatformDependencies
 import kotlin.reflect.KClass
@@ -37,6 +38,13 @@ public class TaskBridge(
      */
     public fun templatesInteractor(): TemplatesInteractor {
         return assembler.templatesInteractor()
+    }
+
+    /**
+     * Provides access to the tasks interactor.
+     */
+    public fun tasksInteractor(): TasksInteractor {
+        return assembler.tasksInteractor()
     }
 
     /**
