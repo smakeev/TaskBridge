@@ -5,6 +5,7 @@ import com.taskbridge.core.models.navigation.NavigationDestination
 import com.taskbridge.core.models.navigation.NavigationOverlay
 import com.taskbridge.core.models.navigation.NavigationPath
 import com.taskbridge.core.usecases.NavigationStateObserverUseCase
+import com.taskbridge.core.usecases.PushNavigationUseCase
 import com.taskbridge.core.usecases.SelectTabUseCase
 import kotlinx.coroutines.flow.Flow
 
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.Flow
  */
 public class NavigationInteractor(
     private val selectTabUseCase: SelectTabUseCase,
+    private val pushNavigationUseCase: PushNavigationUseCase,
     private val observerUseCase: NavigationStateObserverUseCase
 ) {
     public val activePath: Flow<NavigationPath?> = observerUseCase.subscribeOnActivePath()
@@ -25,11 +27,11 @@ public class NavigationInteractor(
     }
 
     public suspend fun pushDestination(destination: NavigationDestination) {
-        selectTabUseCase.pushDestination(destination)
+        pushNavigationUseCase.pushDestination(destination)
     }
 
     public suspend fun popDestination() {
-        selectTabUseCase.popDestination()
+        pushNavigationUseCase.popDestination()
     }
 
     public suspend fun fetchActivePath(): NavigationPath? {

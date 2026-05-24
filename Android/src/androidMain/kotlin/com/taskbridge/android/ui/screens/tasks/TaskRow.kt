@@ -48,18 +48,6 @@ fun TaskTreeRows(
         onRename = onRename,
         onDelete = onDelete
     )
-
-    task.children.forEach { child ->
-        TaskTreeRows(
-            task = child,
-            depth = depth + 1,
-            onOpenTask = onOpenTask,
-            onToggleCheckbox = onToggleCheckbox,
-            onProgressChanged = onProgressChanged,
-            onRename = onRename,
-            onDelete = onDelete
-        )
-    }
 }
 
 @Composable
@@ -154,11 +142,9 @@ private fun taskColor(task: TaskItem): Color = when (task.type) {
 fun taskStatus(task: TaskItem): String = when (task.type) {
     TaskType.CHECKBOX -> if (task.isDone == true) "Checked" else "Unchecked"
     TaskType.PROGRESS -> "${task.progress?.value ?: 0}% complete"
-    TaskType.CONTAINER -> "${task.children.size} subtasks · ${containerCompletion(task)}% complete"
+    TaskType.CONTAINER -> subtaskCountText(task.children.size)
 }
 
-fun containerCompletion(task: TaskItem): Int {
-    if (task.children.isEmpty()) return 0
-    val completed = task.children.count { it.isCompleted }
-    return ((completed.toFloat() / task.children.size.toFloat()) * 100f).toInt()
+private fun subtaskCountText(count: Int): String {
+    return if (count == 1) "1 subtask" else "$count subtasks"
 }

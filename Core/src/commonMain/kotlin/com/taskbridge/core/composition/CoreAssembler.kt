@@ -5,6 +5,7 @@ import com.taskbridge.core.interactors.tasks.TasksInteractor
 import com.taskbridge.core.interactors.templates.TemplatesInteractor
 import com.taskbridge.core.storage.tasks.PlatformDependencies
 import com.taskbridge.core.usecases.NavigationStateObserverUseCase
+import com.taskbridge.core.usecases.PushNavigationUseCase
 import com.taskbridge.core.usecases.SelectTabUseCase
 import com.taskbridge.core.usecases.tasks.TasksUseCase
 import com.taskbridge.core.usecases.templates.TaskTemplatesUseCase
@@ -23,6 +24,7 @@ internal class CoreAssembler(
     fun navigationInteractor(): NavigationInteractor {
         return NavigationInteractor(
             selectTabUseCase = useCases.get(this, SelectTabUseCase::class),
+            pushNavigationUseCase = useCases.get(this, PushNavigationUseCase::class),
             observerUseCase = useCases.get(this, NavigationStateObserverUseCase::class)
         )
     }

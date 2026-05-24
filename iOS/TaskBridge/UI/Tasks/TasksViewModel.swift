@@ -67,14 +67,10 @@ final class TasksViewModel: ObservableObject {
     
     func updateProgress(task: TaskItem, progress: Int) {
         guard task.type == .progress else { return }
-        let updatedTask = TaskItem(
-            id: task.id,
-            parentId: task.parentId,
-            title: task.title,
-            type: task.type,
-            isDone: task.isDone,
-            progress: NSNumber(value: min(max(progress, 0), 100)),
-            children: task.children
+        let clampedProgress = min(max(progress, 0), 100)
+        let updatedTask = TaskItemInterop.shared.withProgress(
+            task: task,
+            progressValue: Int32(clampedProgress)
         )
         Task {
             try? await repository.replaceTask(updatedTask)
@@ -112,14 +108,10 @@ final class TasksViewModel: ObservableObject {
                 children: []
             )
         case .progress:
-            return TaskItem(
+            return TaskItemInterop.shared.progressTask(
                 id: UUID().uuidString,
                 parentId: parentId,
-                title: title,
-                type: type,
-                isDone: nil,
-                progress: NSNumber(value: 0),
-                children: []
+                title: title
             )
         case .container:
             return TaskItem(
@@ -155,6 +147,6 @@ extension TaskItem {
     }
     
     var progressValue: Int {
-        (progress as? NSNumber)?.intValue ?? 0
+        Int(TaskItemInterop.shared.progressValue(task: self))
     }
 }

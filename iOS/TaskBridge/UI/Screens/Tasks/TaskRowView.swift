@@ -11,29 +11,15 @@ struct TaskTreeRowsView: View {
     let onDelete: (TaskItem) -> Void
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            TaskRowView(
-                task: task,
-                depth: depth,
-                onOpen: onOpen,
-                onToggleCheckbox: onToggleCheckbox,
-                onProgressChanged: onProgressChanged,
-                onRename: onRename,
-                onDelete: onDelete
-            )
-            
-            ForEach(task.children, id: \.taskIdValue) { child in
-                TaskTreeRowsView(
-                    task: child,
-                    depth: depth + 1,
-                    onOpen: onOpen,
-                    onToggleCheckbox: onToggleCheckbox,
-                    onProgressChanged: onProgressChanged,
-                    onRename: onRename,
-                    onDelete: onDelete
-                )
-            }
-        }
+        TaskRowView(
+            task: task,
+            depth: depth,
+            onOpen: onOpen,
+            onToggleCheckbox: onToggleCheckbox,
+            onProgressChanged: onProgressChanged,
+            onRename: onRename,
+            onDelete: onDelete
+        )
     }
 }
 
@@ -64,13 +50,9 @@ struct TaskRowView: View {
                     .foregroundColor(.secondary)
                 
                 if task.type == .progress {
-                    Slider(
-                        value: Binding(
-                            get: { Double(task.progressValue) },
-                            set: { onProgressChanged(task, Int($0)) }
-                        ),
-                        in: 0...100,
-                        step: 1
+                    TaskProgressSlider(
+                        task: task,
+                        onProgressChanged: onProgressChanged
                     )
                 }
             }
@@ -141,6 +123,35 @@ struct TaskRowView: View {
     }
 }
 
+struct TaskProgressSlider: View {
+    let task: TaskItem
+    let onProgressChanged: (TaskItem, Int) -> Void
+
+    @State private var value: Double = 0
+
+    var body: some View {
+        Slider(
+            value: Binding(
+                get: { value },
+                set: { value = $0 }
+            ),
+            in: 0...100,
+            step: 1,
+            onEditingChanged: { isEditing in
+                if !isEditing {
+                    onProgressChanged(task, Int(value))
+                }
+            }
+        )
+        .onAppear {
+            value = Double(task.progressValue)
+        }
+        .onChange(of: task.progressValue) { newValue in
+            value = Double(newValue)
+        }
+    }
+}
+
 func taskStatus(_ task: TaskItem) -> String {
     switch task.type {
     case .checkbox:
@@ -148,14 +159,12 @@ func taskStatus(_ task: TaskItem) -> String {
     case .progress:
         return "\(task.progressValue)% complete"
     case .container:
-        return "\(task.children.count) subtasks · \(containerCompletion(task))% complete"
+        return subtaskCountText(task.children.count)
     default:
         return "Task"
     }
 }
 
-func containerCompletion(_ task: TaskItem) -> Int {
-    guard !task.children.isEmpty else { return 0 }
-    let completed = task.children.filter { $0.isCompleted }.count
-    return Int((Double(completed) / Double(task.children.count)) * 100)
+private func subtaskCountText(_ count: Int) -> String {
+    count == 1 ? "1 subtask" : "\(count) subtasks"
 }

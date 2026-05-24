@@ -146,13 +146,9 @@ struct TaskDetailsView: View {
             }
             
             if task.type == .progress {
-                Slider(
-                    value: Binding(
-                        get: { Double(task.progressValue) },
-                        set: { viewModel.updateProgress(task: task, progress: Int($0)) }
-                    ),
-                    in: 0...100,
-                    step: 1
+                TaskProgressSlider(
+                    task: task,
+                    onProgressChanged: viewModel.updateProgress
                 )
             }
         }
