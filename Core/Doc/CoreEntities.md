@@ -181,6 +181,17 @@ The central task domain model. It supports recursive parent-child structures for
 
 ---
 
+## Storage (Internal)
+Internal components for persistence.
+
+### TaskEntity
+A flat, relational-oriented data structure for persisting tasks (e.g., in Room). It does not contain recursive children but includes a `parentId` and `sortOrder`.
+
+### TaskEntityMapper
+Responsible for flattening the recursive `TaskItem` tree into a list of `TaskEntity` for storage and reconstructing the tree back into domain models for the application.
+
+---
+
 ## Network DTOs
 Internal Data Transfer Objects used for serialization.
 
