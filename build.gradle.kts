@@ -4,3 +4,17 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform) apply false
     alias(libs.plugins.composeCompiler) apply false
 }
+
+tasks.register("installGitHooks", Exec::class) {
+    description = "Installs git hooks from .githooks directory"
+    group = "help"
+    workingDir = rootDir
+    commandLine("git", "config", "core.hooksPath", ".githooks")
+}
+
+// Automatically run the task during project build/sync
+afterEvaluate {
+    tasks.named("prepareKotlinBuildScriptModel") {
+        dependsOn("installGitHooks")
+    }
+}

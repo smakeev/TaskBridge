@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# Path to the commit message file provided by git
+COMMIT_MSG_FILE=$1
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# Get list of staged files
+CHANGED_FILES=$(git diff --cached --name-only)
+
+TAGS=""
+
+# Check for iOS changes
+if echo "$CHANGED_FILES" | grep -q "^iOS/"; then
+    TAGS="$TAGS[iOS]"
+fi
+
+# Check for Android changes
+if echo "$CHANGED_FILES" | grep -q "^Android/"; then
+    TAGS="$TAGS[Android]"
+fi
+
+# Check for Core changes
+if echo "$CHANGED_FILES" | grep -q "^Core/"; then
+    TAGS="$TAGS[CORE]"
+fi
+
+# Check for changes outside iOS, Android, and Core (e.g., root files, Platform_Handlers, gradle)
+if echo "$CHANGED_FILES" | grep -v -q -e "^iOS/" -e "^Android/" -e "^Core/"; then
+    TAGS="$TAGS[BASE]"
+fi
+
+# Prepend tags if any found and if they aren't already there
+if [ -n "$TAGS" ] && [[ ! "$COMMIT_MSG" == "$TAGS"* ]]; then
+    echo "$TAGS $COMMIT_MSG" > "$COMMIT_MSG_FILE"
+fi
