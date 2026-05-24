@@ -3,6 +3,7 @@ import TaskBridgeCore
 
 /**
  * Utility to bridge Kotlin Flows to Swift AsyncStreams with proper lifecycle management.
+ * Enforces @MainActor to satisfy Kotlin/Native threading requirements for suspend functions.
  */
 @MainActor
 func createStream<T>(for flow: any Kotlinx_coroutines_coreFlow) -> AsyncStream<T> {
