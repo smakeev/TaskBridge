@@ -1,0 +1,451 @@
+[
+  {
+    "id": "ios-interview-prep",
+    "title": "iOS Interview Prep",
+    "description": "Structured preparation for a senior iOS interview.",
+    "rootTask": {
+      "id": "ios-root",
+      "title": "Prepare for iOS interview",
+      "type": "container",
+      "children": [
+        {
+          "id": "ios-theory",
+          "title": "Review theory",
+          "type": "container",
+          "children": [
+            {
+              "id": "ios-swift",
+              "title": "Swift fundamentals",
+              "type": "container",
+              "children": [
+                {
+                  "id": "ios-swift-arc",
+                  "title": "Review ARC",
+                  "type": "checkbox"
+                },
+                {
+                  "id": "ios-swift-concurrency",
+                  "title": "Swift Concurrency practice",
+                  "type": "progress",
+                  "initialProgress": 20
+                }
+              ]
+            },
+            {
+              "id": "ios-ui",
+              "title": "UI frameworks",
+              "type": "container",
+              "children": [
+                {
+                  "id": "ios-swiftui",
+                  "title": "SwiftUI state management",
+                  "type": "progress",
+                  "initialProgress": 10
+                },
+                {
+                  "id": "ios-uikit",
+                  "title": "UIKit lifecycle",
+                  "type": "checkbox"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ios-livecoding",
+          "title": "Live coding preparation",
+          "type": "progress",
+          "initialProgress": 5
+        }
+      ]
+    }
+  },
+  {
+    "id": "kmp-demo",
+    "title": "KMP Demo App",
+    "description": "Build a Kotlin Multiplatform demo application.",
+    "rootTask": {
+      "id": "kmp-root",
+      "title": "Create KMP demo",
+      "type": "container",
+      "children": [
+        {
+          "id": "kmp-core",
+          "title": "Shared core",
+          "type": "container",
+          "children": [
+            {
+              "id": "kmp-models",
+              "title": "Define models",
+              "type": "checkbox"
+            },
+            {
+              "id": "kmp-services",
+              "title": "Implement services",
+              "type": "container",
+              "children": [
+                {
+                  "id": "kmp-appstate",
+                  "title": "AppState service",
+                  "type": "progress",
+                  "initialProgress": 40
+                },
+                {
+                  "id": "kmp-navigation",
+                  "title": "Navigation service",
+                  "type": "progress",
+                  "initialProgress": 70
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "kmp-platforms",
+          "title": "Platform integration",
+          "type": "container",
+          "children": [
+            {
+              "id": "kmp-ios",
+              "title": "iOS integration",
+              "type": "progress",
+              "initialProgress": 25
+            },
+            {
+              "id": "kmp-android",
+              "title": "Android integration",
+              "type": "progress",
+              "initialProgress": 30
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "travel-prep",
+    "title": "Travel Preparation",
+    "description": "Prepare for a long trip with planning and packing.",
+    "rootTask": {
+      "id": "travel-root",
+      "title": "Prepare for travel",
+      "type": "container",
+      "children": [
+        {
+          "id": "travel-route",
+          "title": "Plan route",
+          "type": "container",
+          "children": [
+            {
+              "id": "travel-destination",
+              "title": "Choose destination",
+              "type": "checkbox"
+            },
+            {
+              "id": "travel-reviews",
+              "title": "Read reviews",
+              "type": "progress",
+              "initialProgress": 15
+            },
+            {
+              "id": "travel-maps",
+              "title": "Offline maps",
+              "type": "container",
+              "children": [
+                {
+                  "id": "travel-download-maps",
+                  "title": "Download maps",
+                  "type": "checkbox"
+                },
+                {
+                  "id": "travel-mark-places",
+                  "title": "Mark places to visit",
+                  "type": "progress",
+                  "initialProgress": 5
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "travel-packing",
+          "title": "Packing",
+          "type": "progress",
+          "initialProgress": 0
+        }
+      ]
+    }
+  },
+  {
+    "id": "release-checklist",
+    "title": "Mobile Release Checklist",
+    "description": "Prepare a production mobile release.",
+    "rootTask": {
+      "id": "release-root",
+      "title": "Release preparation",
+      "type": "container",
+      "children": [
+        {
+          "id": "release-testing",
+          "title": "Testing",
+          "type": "container",
+          "children": [
+            {
+              "id": "release-unit-tests",
+              "title": "Run unit tests",
+              "type": "checkbox"
+            },
+            {
+              "id": "release-ui-tests",
+              "title": "Run UI tests",
+              "type": "progress",
+              "initialProgress": 60
+            }
+          ]
+        },
+        {
+          "id": "release-store",
+          "title": "Store preparation",
+          "type": "container",
+          "children": [
+            {
+              "id": "release-notes",
+              "title": "Write release notes",
+              "type": "checkbox"
+            },
+            {
+              "id": "release-screenshots",
+              "title": "Prepare screenshots",
+              "type": "progress",
+              "initialProgress": 30
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "bug-investigation",
+    "title": "Bug Investigation",
+    "description": "Investigate and fix a production issue.",
+    "rootTask": {
+      "id": "bug-root",
+      "title": "Fix production bug",
+      "type": "container",
+      "children": [
+        {
+          "id": "bug-repro",
+          "title": "Reproduce issue",
+          "type": "checkbox"
+        },
+        {
+          "id": "bug-analysis",
+          "title": "Analyze logs",
+          "type": "container",
+          "children": [
+            {
+              "id": "bug-network",
+              "title": "Check networking logs",
+              "type": "progress",
+              "initialProgress": 50
+            },
+            {
+              "id": "bug-crashes",
+              "title": "Analyze crash reports",
+              "type": "progress",
+              "initialProgress": 10
+            }
+          ]
+        },
+        {
+          "id": "bug-fix",
+          "title": "Implement fix",
+          "type": "progress",
+          "initialProgress": 0
+        }
+      ]
+    }
+  },
+  {
+    "id": "workout-plan",
+    "title": "Workout Plan",
+    "description": "Structured gym session.",
+    "rootTask": {
+      "id": "workout-root",
+      "title": "Gym session",
+      "type": "container",
+      "children": [
+        {
+          "id": "workout-warmup",
+          "title": "Warm up",
+          "type": "checkbox"
+        },
+        {
+          "id": "workout-main",
+          "title": "Main exercises",
+          "type": "container",
+          "children": [
+            {
+              "id": "workout-bench",
+              "title": "Bench press",
+              "type": "progress",
+              "initialProgress": 40
+            },
+            {
+              "id": "workout-pullups",
+              "title": "Pull-ups",
+              "type": "progress",
+              "initialProgress": 20
+            }
+          ]
+        },
+        {
+          "id": "workout-stretch",
+          "title": "Stretching",
+          "type": "checkbox"
+        }
+      ]
+    }
+  },
+  {
+    "id": "architecture-review",
+    "title": "Architecture Review",
+    "description": "Review app architecture quality.",
+    "rootTask": {
+      "id": "arch-root",
+      "title": "Architecture review",
+      "type": "container",
+      "children": [
+        {
+          "id": "arch-boundaries",
+          "title": "Review module boundaries",
+          "type": "progress",
+          "initialProgress": 25
+        },
+        {
+          "id": "arch-navigation",
+          "title": "Review navigation",
+          "type": "container",
+          "children": [
+            {
+              "id": "arch-state",
+              "title": "State ownership",
+              "type": "checkbox"
+            },
+            {
+              "id": "arch-routing",
+              "title": "Routing flow",
+              "type": "progress",
+              "initialProgress": 45
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "daily-focus",
+    "title": "Daily Focus Plan",
+    "description": "Plan and track the day.",
+    "rootTask": {
+      "id": "focus-root",
+      "title": "Daily focus",
+      "type": "container",
+      "children": [
+        {
+          "id": "focus-priority",
+          "title": "Choose top priority",
+          "type": "checkbox"
+        },
+        {
+          "id": "focus-deepwork",
+          "title": "Deep work session",
+          "type": "progress",
+          "initialProgress": 0
+        },
+        {
+          "id": "focus-review",
+          "title": "End of day review",
+          "type": "checkbox"
+        }
+      ]
+    }
+  },
+  {
+    "id": "learning-session",
+    "title": "Learning Session",
+    "description": "Structured technical learning.",
+    "rootTask": {
+      "id": "learning-root",
+      "title": "Learn new topic",
+      "type": "container",
+      "children": [
+        {
+          "id": "learning-read",
+          "title": "Read documentation",
+          "type": "progress",
+          "initialProgress": 35
+        },
+        {
+          "id": "learning-practice",
+          "title": "Build practice project",
+          "type": "container",
+          "children": [
+            {
+              "id": "learning-models",
+              "title": "Create models",
+              "type": "checkbox"
+            },
+            {
+              "id": "learning-ui",
+              "title": "Create UI",
+              "type": "progress",
+              "initialProgress": 5
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "job-application",
+    "title": "Job Application Pipeline",
+    "description": "Prepare and submit a job application.",
+    "rootTask": {
+      "id": "job-root",
+      "title": "Apply for job",
+      "type": "container",
+      "children": [
+        {
+          "id": "job-vacancy",
+          "title": "Study vacancy",
+          "type": "checkbox"
+        },
+        {
+          "id": "job-cv",
+          "title": "Update CV",
+          "type": "progress",
+          "initialProgress": 80
+        },
+        {
+          "id": "job-apply",
+          "title": "Submit application",
+          "type": "container",
+          "children": [
+            {
+              "id": "job-cover-letter",
+              "title": "Write cover letter",
+              "type": "progress",
+              "initialProgress": 15
+            },
+            {
+              "id": "job-followup",
+              "title": "Track follow-up",
+              "type": "checkbox"
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

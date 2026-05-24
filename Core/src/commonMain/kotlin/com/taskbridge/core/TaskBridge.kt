@@ -9,6 +9,10 @@ import kotlin.reflect.KClass
  */
 public class TaskBridge {
 
+    public companion object {
+        public const val TEMPLATES_URL: String = "https://raw.githubusercontent.com/smakeev/TaskBridge/main/docs/mock-api/templates.json"
+    }
+
     private val assembler = CoreAssembler()
 
     /**
