@@ -8,12 +8,18 @@
 
 /* Begin PBXBuildFile section */
 		173C2B09580E1AA33E3C2ABA /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA8F2A875CDF1E5AA309B600 /* ContentView.swift */; };
+		40211259DF891C250656FF1A /* NavigationRepositoryImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD776836A7AF68FE1BE1316E /* NavigationRepositoryImpl.swift */; };
 		994144BEE92DD29B5BE5AFC4 /* TaskBridgeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E300853D65664E59F553BF7 /* TaskBridgeApp.swift */; };
+		A7F34EC45AE2645D00C047AF /* NavigationRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92A4367BEAE8DB4EA5AA9343 /* NavigationRepository.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0B3AF71ADBE0A464992FF535 /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
+		1471703C39D83E55CB6ACF6B /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
 		549A51DB6F117F9A1E388981 /* TaskBridge.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = TaskBridge.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E300853D65664E59F553BF7 /* TaskBridgeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskBridgeApp.swift; sourceTree = "<group>"; };
+		92A4367BEAE8DB4EA5AA9343 /* NavigationRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationRepository.swift; sourceTree = "<group>"; };
+		DD776836A7AF68FE1BE1316E /* NavigationRepositoryImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationRepositoryImpl.swift; sourceTree = "<group>"; };
 		EA8F2A875CDF1E5AA309B600 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -24,6 +30,25 @@
 				E6749F32672D596F81F5C25B /* TaskBridge */,
 				C38067A826B7F63816ED08E6 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		1983F476E2A2FEA90DAC9B37 /* Repository */ = {
+			isa = PBXGroup;
+			children = (
+				0B3AF71ADBE0A464992FF535 /* .gitkeep */,
+				92A4367BEAE8DB4EA5AA9343 /* NavigationRepository.swift */,
+				A204D9399EE66115C4B8F82A /* Impl */,
+			);
+			path = Repository;
+			sourceTree = "<group>";
+		};
+		A204D9399EE66115C4B8F82A /* Impl */ = {
+			isa = PBXGroup;
+			children = (
+				1471703C39D83E55CB6ACF6B /* .gitkeep */,
+				DD776836A7AF68FE1BE1316E /* NavigationRepositoryImpl.swift */,
+			);
+			path = Impl;
 			sourceTree = "<group>";
 		};
 		C38067A826B7F63816ED08E6 /* Products */ = {
@@ -39,6 +64,7 @@
 			children = (
 				EA8F2A875CDF1E5AA309B600 /* ContentView.swift */,
 				8E300853D65664E59F553BF7 /* TaskBridgeApp.swift */,
+				1983F476E2A2FEA90DAC9B37 /* Repository */,
 			);
 			path = TaskBridge;
 			sourceTree = "<group>";
@@ -122,6 +148,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				173C2B09580E1AA33E3C2ABA /* ContentView.swift in Sources */,
+				A7F34EC45AE2645D00C047AF /* NavigationRepository.swift in Sources */,
+				40211259DF891C250656FF1A /* NavigationRepositoryImpl.swift in Sources */,
 				994144BEE92DD29B5BE5AFC4 /* TaskBridgeApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

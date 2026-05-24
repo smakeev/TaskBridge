@@ -2,12 +2,13 @@ import SwiftUI
 import TaskBridgeCore
 
 struct ContentView: View {
-    private let navigationInteractor: NavigationInteractor
+    private let repository: NavigationRepository
     @State private var selectedTab: AppTab = .tasks
     
     init() {
         let taskBridge = TaskBridge()
-        self.navigationInteractor = taskBridge.navigationInteractor()
+        let interactor = taskBridge.navigationInteractor()
+        self.repository = NavigationRepositoryImpl(interactor: interactor)
     }
     
     var body: some View {
@@ -22,7 +23,15 @@ struct ContentView: View {
         }
         .onChange(of: selectedTab) { newTab in
             Task {
-                try? await navigationInteractor.selectTab(tab: newTab)
+                try? await repository.selectTab(tab: newTab)
+            }
+        }
+        .task {
+            // Fully core-driven navigation
+            for await tab in repository.currentTab {
+                if selectedTab != tab {
+                    selectedTab = tab
+                }
             }
         }
     }
