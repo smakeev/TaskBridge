@@ -2,6 +2,7 @@ package com.taskbridge.core
 
 import com.taskbridge.core.composition.CoreAssembler
 import com.taskbridge.core.interactors.navigation.NavigationInteractor
+import com.taskbridge.core.interactors.templates.TemplatesInteractor
 import kotlin.reflect.KClass
 
 /**
@@ -11,6 +12,12 @@ public class TaskBridge {
 
     public companion object {
         public const val TEMPLATES_URL: String = "https://raw.githubusercontent.com/smakeev/TaskBridge/main/docs/mock-api/templates.json"
+        
+        /**
+         * TTL for task templates. 
+         * TODO: In production this value could come from remote config, backend metadata, or feature flags.
+         */
+        public const val TEMPLATES_TTL_MILLIS: Long = 10 * 60 * 1000L // 10 minutes
     }
 
     private val assembler = CoreAssembler()
@@ -20,6 +27,13 @@ public class TaskBridge {
      */
     public fun navigationInteractor(): NavigationInteractor {
         return assembler.navigationInteractor()
+    }
+
+    /**
+     * Provides access to the templates interactor.
+     */
+    public fun templatesInteractor(): TemplatesInteractor {
+        return assembler.templatesInteractor()
     }
 
     /**

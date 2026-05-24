@@ -2,6 +2,7 @@ package com.taskbridge.core.composition
 
 import com.taskbridge.core.usecases.NavigationStateObserverUseCase
 import com.taskbridge.core.usecases.SelectTabUseCase
+import com.taskbridge.core.usecases.templates.TaskTemplatesUseCase
 import kotlin.reflect.KClass
 
 /**
@@ -15,6 +16,7 @@ internal class UseCaseContainer {
         return when (type) {
             SelectTabUseCase::class -> SelectTabUseCase(assembler) as T
             NavigationStateObserverUseCase::class -> NavigationStateObserverUseCase(assembler) as T
+            TaskTemplatesUseCase::class -> TaskTemplatesUseCase(assembler) as T
             else -> error("Unknown use case type: ${type.simpleName}")
         }
     }

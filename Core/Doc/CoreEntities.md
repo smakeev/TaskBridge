@@ -6,6 +6,7 @@ This document describes the entities in the TaskBridge Core module.
 ### TaskBridge
 The main entry point for the Core module. It provides access to public Interactors (e.g., `navigationInteractor()`). Internal Use Case access is hidden from the platform.
 - `TEMPLATES_URL`: Constant URL for fetching task templates.
+- `TEMPLATES_TTL_MILLIS`: Constant TTL for task templates caching.
 
 ---
 
@@ -21,6 +22,12 @@ Public class providing a simplified interface for navigation logic. Assembled by
 - `fetchActivePath()`: Suspends and returns the current path.
 - `fetchCurrentTab()`: Suspends and returns the current tab.
 - `fetchOverlay()`: Suspends and returns the current overlay.
+
+### TemplatesInteractor
+Public platform-facing interactor for managing task templates.
+- `templatesState`: `Flow<TaskTemplatesState>`
+- `loadTemplates()`: Triggers loading if cache is expired.
+- `forceLoadTemplates()`: Forcefully reloads templates.
 
 ---
 
@@ -87,6 +94,12 @@ Observes or fetches navigation-related state.
 - `fetchCurrentTab()`: Suspends until the first `AppTab` is available.
 - `fetchOverlay()`: Suspends until the first `NavigationOverlay?` is available.
 
+### TaskTemplatesUseCase
+Internal use case for managing task templates. Maps generic remote resource state to domain-specific templates state.
+- `loadTemplates()`: Triggers loading using `TEMPLATES_URL` and `TEMPLATES_TTL_MILLIS`.
+- `forceLoadTemplates()`: Forcefully reloads templates.
+- `observeTemplates()`: Returns a `Flow<TaskTemplatesState>`.
+
 ---
 
 ## Services
@@ -149,6 +162,9 @@ A recursive data class representing a task item within a template. It can contai
 
 #### TaskTemplate
 A data class representing a full task template, including its metadata and the root of its task tree.
+
+#### TaskTemplatesState
+Public state model for task templates, including the template list, loading status, and error messages.
 
 ---
 
