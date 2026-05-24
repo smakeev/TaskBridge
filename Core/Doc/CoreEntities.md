@@ -80,6 +80,26 @@ Provides a `Flow<RemoteResourceEntry?>` for a specific URL, allowing observation
 
 ---
 
+## Tasks Stories (Internal)
+Internal atomic operations over the `TasksService`.
+
+### LoadTasksStory
+Triggers a fresh load of all tasks from local storage.
+
+### CreateTaskStory
+Persists a new task tree through the `TasksService`.
+
+### ReplaceTaskStory
+Replaces an existing task's subtree via the `TasksService`.
+
+### DeleteTaskTreeStory
+Recursively deletes a task and all its descendants.
+
+### ObserveTasksStory
+Provides a reactive `Flow` of the current `TasksServiceData`.
+
+---
+
 ## Use Cases (Internal to Core)
 ### SelectTabUseCase
 Handles tab selection logic.

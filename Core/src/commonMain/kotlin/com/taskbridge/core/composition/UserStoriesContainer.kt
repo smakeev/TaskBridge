@@ -2,6 +2,7 @@ package com.taskbridge.core.composition
 
 import com.taskbridge.core.stories.*
 import com.taskbridge.core.stories.remote.*
+import com.taskbridge.core.stories.tasks.*
 import kotlin.reflect.KClass
 
 /**
@@ -24,4 +25,14 @@ internal class UserStoriesContainer {
     fun forceLoadRemoteResource(assembler: CoreAssembler): ForceLoadRemoteResourceStory = ForceLoadRemoteResourceStory(assembler)
 
     fun observeRemoteResource(assembler: CoreAssembler): ObserveRemoteResourceStory = ObserveRemoteResourceStory(assembler)
+
+    fun loadTasks(assembler: CoreAssembler): LoadTasksStory = LoadTasksStory(assembler)
+
+    fun createTask(assembler: CoreAssembler): CreateTaskStory = CreateTaskStory(assembler)
+
+    fun replaceTask(assembler: CoreAssembler): ReplaceTaskStory = ReplaceTaskStory(assembler)
+
+    fun deleteTaskTree(assembler: CoreAssembler): DeleteTaskTreeStory = DeleteTaskTreeStory(assembler)
+
+    fun observeTasks(assembler: CoreAssembler): ObserveTasksStory = ObserveTasksStory(assembler)
 }
