@@ -1,10 +1,14 @@
 package com.taskbridge.core.composition
 
+import com.taskbridge.core.events.common.CoreEventBus
+import com.taskbridge.core.events.reminders.ReminderEvent
+import com.taskbridge.core.handlers.reminders.ReminderHandler
 import com.taskbridge.core.network.HttpJsonClient
 import com.taskbridge.core.network.JsonRequestManager
 import com.taskbridge.core.services.appstate.AppStateService
 import com.taskbridge.core.services.network.NetworkService
 import com.taskbridge.core.services.remote.RemoteResourceService
+import com.taskbridge.core.services.reminders.RemindersService
 import com.taskbridge.core.services.tasks.TasksService
 import com.taskbridge.core.storage.tasks.*
 import kotlinx.coroutines.CoroutineScope
@@ -17,7 +21,9 @@ import kotlinx.datetime.Clock
  * Creates and keeps service instances lazily.
  */
 internal class CoreServiceLocator(
-    private val platformDependencies: PlatformDependencies
+    private val platformDependencies: PlatformDependencies,
+    private val reminderHandler: ReminderHandler,
+    private val reminderEvents: CoreEventBus<ReminderEvent>
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -59,6 +65,14 @@ internal class CoreServiceLocator(
         )
     }
 
+    private val remindersServiceInstance: RemindersService by lazy {
+        RemindersService(
+            scope = scope,
+            reminderHandler = reminderHandler,
+            reminderEvents = reminderEvents
+        )
+    }
+
     fun appStateService(): AppStateService = appStateServiceInstance
 
     fun networkService(): NetworkService = networkServiceInstance
@@ -68,4 +82,6 @@ internal class CoreServiceLocator(
     fun taskStorageManager(): TaskStorageManager = taskStorageManagerInstance
 
     fun tasksService(): TasksService = tasksServiceInstance
+
+    fun remindersService(): RemindersService = remindersServiceInstance
 }

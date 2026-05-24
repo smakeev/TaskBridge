@@ -2,7 +2,10 @@ package com.taskbridge.core.models.templates
 
 import kotlin.jvm.JvmInline
 
-@JvmInline
-public value class TemplateId(
+/**
+ * Data class representing a unique identifier for a Template.
+ * Using data class instead of value class for better Swift interoperability.
+ */
+public data class TemplateId(
     val value: String
 )

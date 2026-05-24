@@ -17,7 +17,7 @@ struct TaskDetailsView: View {
     }
     
     var body: some View {
-        let task = viewModel.state.findTask(id: taskId)
+        let task = viewModel.state.findTask(id: TaskId(value: taskId))
         
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 12) {

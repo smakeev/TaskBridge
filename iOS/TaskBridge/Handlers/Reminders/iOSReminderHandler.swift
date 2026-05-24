@@ -8,8 +8,8 @@ import TaskBridgeCore
  * from actual pending notification requests.
  */
 class iOSReminderHandler: NSObject, ReminderHandler {
-    private var eventEmitter: CoreEventEmitter? = null
-    private val notificationCenter = UNUserNotificationCenter.current()
+    private var eventEmitter: CoreEventEmitter? = nil
+    private let notificationCenter = UNUserNotificationCenter.current()
     
     func setEventEmitter(emitter: CoreEventEmitter) {
         self.eventEmitter = emitter
@@ -19,24 +19,20 @@ class iOSReminderHandler: NSObject, ReminderHandler {
         let requests = await notificationCenter.pendingNotificationRequests()
         return requests.compactMap { request in
             // Reconstruct Reminder from UNNotificationRequest
-            // We use the identifier as the ID. 
-            // In production, additional metadata could be stored in userInfo.
             
-            let triggerAtMillis: Int64
+            var triggerAtMillis: Int64 = 0
             if let calendarTrigger = request.trigger as? UNCalendarNotificationTrigger,
                let date = calendarTrigger.nextTriggerDate() {
                 triggerAtMillis = Int64(date.timeIntervalSince1970 * 1000)
-            } else {
-                triggerAtMillis = 0
             }
             
             return Reminder(
                 id: ReminderId(value: request.identifier),
                 title: request.content.title,
                 body: request.content.body,
-                type: .start, // Assuming START for pending ones for now
+                type: .start,
                 triggerAtMillis: triggerAtMillis,
-                createdAtMillis: 0 // Not stored in pending request by default
+                createdAtMillis: 0
             )
         }
     }

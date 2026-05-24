@@ -170,6 +170,9 @@ Manages the application state, including navigation.
 ### TasksService (Internal)
 Stateful service that owns the task tree state. It persists changes through `TaskStorageManager` and ensures deterministic behavior by reloading state from storage after mutations. Supported operations include loading, creating, replacing subtrees, and deleting subtrees.
 
+### RemindersService (Internal)
+Stateful, event-driven service for managing reminders. It synchronizes Core state with platform-specific `ReminderHandler` via an internal event bus. The platform handler is the source of truth for reminders.
+
 ### NetworkService (Internal)
 Stateless service for network operations. Wraps `JsonRequestManager` and provide sequential handling for JSON loading requests. Does not cache results.
 

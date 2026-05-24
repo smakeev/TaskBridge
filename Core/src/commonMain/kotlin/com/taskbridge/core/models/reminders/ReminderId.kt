@@ -1,13 +1,12 @@
 package com.taskbridge.core.models.reminders
 
 import kotlinx.serialization.Serializable
-import kotlin.jvm.JvmInline
 
 /**
- * Value class representing a unique identifier for a Reminder.
+ * Data class representing a unique identifier for a Reminder.
+ * Using data class instead of value class for better Swift interoperability.
  */
-@JvmInline
 @Serializable
-public value class ReminderId(
+public data class ReminderId(
     val value: String
 )

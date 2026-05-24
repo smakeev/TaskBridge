@@ -30,20 +30,20 @@ final class TasksViewModel: ObservableObject {
         }
     }
     
-    func createTask(title: String, type: TaskType, parentId: Any? = nil) {
+    func createTask(title: String, type: TaskType, parentId: TaskId? = nil) {
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedTitle.isEmpty else { return }
-        
+
         Task {
             try? await repository.createTask(newTask(title: trimmedTitle, type: type, parentId: parentId))
         }
     }
-    
+
     func createSubtask(parentTask: TaskItem, title: String, type: TaskType) {
         createTask(title: title, type: type, parentId: parentTask.id)
     }
-    
-    func deleteTaskTree(taskId: Any) {
+
+    func deleteTaskTree(taskId: TaskId) {
         Task {
             try? await repository.deleteTaskTree(taskId)
         }
@@ -95,11 +95,12 @@ final class TasksViewModel: ObservableObject {
         }
     }
     
-    private func newTask(title: String, type: TaskType, parentId: Any?) -> TaskItem {
+    private func newTask(title: String, type: TaskType, parentId: TaskId?) -> TaskItem {
+        let taskId = TaskId(value: UUID().uuidString)
         switch type {
         case .checkbox:
             return TaskItem(
-                id: UUID().uuidString,
+                id: taskId,
                 parentId: parentId,
                 title: title,
                 type: type,
@@ -109,13 +110,13 @@ final class TasksViewModel: ObservableObject {
             )
         case .progress:
             return TaskItemInterop.shared.progressTask(
-                id: UUID().uuidString,
+                id: taskId,
                 parentId: parentId,
                 title: title
             )
         case .container:
             return TaskItem(
-                id: UUID().uuidString,
+                id: taskId,
                 parentId: parentId,
                 title: title,
                 type: type,
@@ -125,7 +126,7 @@ final class TasksViewModel: ObservableObject {
             )
         default:
             return TaskItem(
-                id: UUID().uuidString,
+                id: taskId,
                 parentId: parentId,
                 title: title,
                 type: .checkbox,
@@ -139,13 +140,13 @@ final class TasksViewModel: ObservableObject {
 
 extension TaskItem {
     var taskIdValue: String {
-        id as? String ?? String(describing: id)
+        id.value
     }
-    
+
     var isChecked: Bool {
         isDone?.boolValue == true
     }
-    
+
     var progressValue: Int {
         Int(TaskItemInterop.shared.progressValue(task: self))
     }

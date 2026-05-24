@@ -2,6 +2,7 @@ package com.taskbridge.core.composition
 
 import com.taskbridge.core.events.CoreEventBuses
 import com.taskbridge.core.events.CoreEventEmitter
+import com.taskbridge.core.handlers.CorePlatformHandlers
 import com.taskbridge.core.interactors.navigation.NavigationInteractor
 import com.taskbridge.core.interactors.tasks.TasksInteractor
 import com.taskbridge.core.interactors.templates.TemplatesInteractor
@@ -17,11 +18,16 @@ import com.taskbridge.core.usecases.templates.TaskTemplatesUseCase
  * Owns the service locator, containers, and provides interactor assembly.
  */
 internal class CoreAssembler(
-    val platformDependencies: PlatformDependencies
+    val platformDependencies: PlatformDependencies,
+    val platformHandlers: CorePlatformHandlers
 ) {
     val buses = CoreEventBuses()
     val eventEmitter = CoreEventEmitter(buses)
-    val services = CoreServiceLocator(platformDependencies)
+    val services = CoreServiceLocator(
+        platformDependencies = platformDependencies,
+        reminderHandler = platformHandlers.reminderHandler,
+        reminderEvents = buses.reminderEvents
+    )
     val stories = UserStoriesContainer()
     val useCases = UseCaseContainer()
 

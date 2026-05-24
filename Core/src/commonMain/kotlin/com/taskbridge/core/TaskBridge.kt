@@ -27,7 +27,7 @@ public class TaskBridge(
         public const val TEMPLATES_TTL_MILLIS: Long = 10 * 60 * 1000L // 10 minutes
     }
 
-    private val assembler = CoreAssembler(platformDependencies)
+    private val assembler = CoreAssembler(platformDependencies, platformHandlers)
 
     init {
         // Wire the event emitter into platform handlers

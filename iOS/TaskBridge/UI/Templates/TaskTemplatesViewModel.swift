@@ -52,8 +52,8 @@ class TaskTemplatesViewModel: ObservableObject {
         }
     }
 
-    private func makeTask(from templateTask: TemplateTaskItem, parentId: Any?, titleOverride: String? = nil) -> TaskItem {
-        let taskId = UUID().uuidString
+    private func makeTask(from templateTask: TemplateTaskItem, parentId: TaskId?, titleOverride: String? = nil) -> TaskItem {
+        let taskId = TaskId(value: UUID().uuidString)
         let title = titleOverride ?? templateTask.title
 
         switch templateTask.type {

@@ -1,11 +1,9 @@
 package com.taskbridge.core.models.tasks
 
-import kotlin.jvm.JvmInline
-
 /**
- * Value class representing a unique identifier for a Task.
+ * Data class representing a unique identifier for a Task.
+ * Using data class instead of value class for better Swift interoperability.
  */
-@JvmInline
-public value class TaskId(
+public data class TaskId(
     val value: String
 )
