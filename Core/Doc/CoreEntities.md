@@ -166,6 +166,19 @@ A data class representing a full task template, including its metadata and the r
 #### TaskTemplatesState
 Public state model for task templates, including the template list, loading status, and error messages.
 
+### Tasks
+#### TaskId
+A value class representing a unique identifier for a task.
+
+#### TaskType
+An enum representing the three mutually exclusive task kinds: `CHECKBOX`, `PROGRESS`, and `CONTAINER`.
+
+#### TaskProgress
+A value class for tracking progress (0 to 100).
+
+#### TaskItem
+The central task domain model. It supports recursive parent-child structures for `CONTAINER` tasks. Completion state (`isCompleted`) is derived based on the task type (e.g., containers are completed only if all their children are completed).
+
 ---
 
 ## Network DTOs
