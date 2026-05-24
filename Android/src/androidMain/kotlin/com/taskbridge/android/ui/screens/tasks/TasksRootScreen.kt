@@ -1,9 +1,193 @@
 package com.taskbridge.android.ui.screens.tasks
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import com.taskbridge.android.ui.screens.ScreenPlaceholder
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.taskbridge.android.repository.NavigationRepository
+import com.taskbridge.android.repository.TasksRepository
+import com.taskbridge.android.ui.tasks.TasksViewModel
+import com.taskbridge.core.models.navigation.NavigationDestination
+import com.taskbridge.core.models.tasks.TaskItem
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 @Composable
-fun TasksRootScreen() {
-    ScreenPlaceholder("Tasks Root")
+fun TasksRootScreen(
+    tasksRepository: TasksRepository,
+    navigationRepository: NavigationRepository,
+    scope: CoroutineScope
+) {
+    val viewModel: TasksViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                @Suppress("UNCHECKED_CAST")
+                return TasksViewModel(tasksRepository) as T
+            }
+        }
+    )
+    val state by viewModel.state.collectAsState()
+    var showCreateDialog by remember { mutableStateOf(false) }
+    var taskToRename by remember { mutableStateOf<TaskItem?>(null) }
+
+    LaunchedEffect(Unit) {
+        viewModel.loadTasks()
+    }
+
+    Scaffold(
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = { showCreateDialog = true },
+                icon = { androidx.compose.material3.Icon(Icons.Default.Add, contentDescription = null) },
+                text = { Text("Add") }
+            )
+        }
+    ) { paddingValues ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                .padding(paddingValues),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            item {
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = "Tasks", style = MaterialTheme.typography.headlineMedium)
+                        Text(
+                            text = "Organize work into checklists, progress tasks, and containers.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            if (state.isLoading && state.tasks.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 48.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+            }
+
+            state.errorMessage?.let { error ->
+                item {
+                    Text(
+                        text = error,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f),
+                                shape = MaterialTheme.shapes.medium
+                            )
+                            .padding(14.dp)
+                    )
+                }
+            }
+
+            if (!state.isLoading && state.tasks.isEmpty()) {
+                item {
+                    EmptyTasksState()
+                }
+            }
+
+            items(state.tasks, key = { it.id.value }) { task ->
+                TaskTreeRows(
+                    task = task,
+                    depth = 0,
+                    onOpenTask = {
+                        scope.launch {
+                            navigationRepository.pushDestination(NavigationDestination.TaskDetails(it.id.value))
+                        }
+                    },
+                    onToggleCheckbox = viewModel::toggleCheckbox,
+                    onProgressChanged = viewModel::updateProgress,
+                    onRename = { taskToRename = it },
+                    onDelete = { viewModel.deleteTaskTree(it.id) }
+                )
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(72.dp))
+            }
+        }
+    }
+
+    if (showCreateDialog) {
+        TaskEditDialog(
+            title = "New task",
+            onDismiss = { showCreateDialog = false },
+            onSave = { taskTitle, taskType ->
+                viewModel.createTask(taskTitle, taskType)
+                showCreateDialog = false
+            }
+        )
+    }
+
+    taskToRename?.let { task ->
+        TaskRenameDialog(
+            task = task,
+            onDismiss = { taskToRename = null },
+            onSave = { newTitle ->
+                viewModel.renameTask(task, newTitle)
+                taskToRename = null
+            }
+        )
+    }
+}
+
+@Composable
+private fun EmptyTasksState() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 56.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(text = "No tasks yet", style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = "Create a root task to start building your tree.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.Gray,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+    }
 }

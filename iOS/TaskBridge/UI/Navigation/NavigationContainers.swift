@@ -30,24 +30,35 @@ class NavigationViewModel: ObservableObject {
 
 struct TasksNavigationView: View {
     @StateObject private var viewModel: NavigationViewModel
+    private let navigationRepository: NavigationRepository
+    private let tasksRepository: TasksRepository
     
-    init(repository: NavigationRepository) {
+    init(navigationRepository: NavigationRepository, tasksRepository: TasksRepository) {
+        self.navigationRepository = navigationRepository
+        self.tasksRepository = tasksRepository
         _viewModel = StateObject(wrappedValue: NavigationViewModel(
-            repository: repository,
+            repository: navigationRepository,
             rootType: NavigationDestinationTasksRoot.self
         ))
     }
     
     var body: some View {
-        DestinationMapper(destination: viewModel.currentDestination, templatesRepository: nil)
+        DestinationMapper(
+            destination: viewModel.currentDestination,
+            navigationRepository: navigationRepository,
+            templatesRepository: nil,
+            tasksRepository: tasksRepository
+        )
     }
 }
 
 struct TemplatesNavigationView: View {
     @StateObject private var viewModel: NavigationViewModel
+    private let navigationRepository: NavigationRepository
     private let templatesRepository: TaskTemplatesRepository
     
     init(navigationRepository: NavigationRepository, templatesRepository: TaskTemplatesRepository) {
+        self.navigationRepository = navigationRepository
         self.templatesRepository = templatesRepository
         _viewModel = StateObject(wrappedValue: NavigationViewModel(
             repository: navigationRepository,
@@ -56,14 +67,21 @@ struct TemplatesNavigationView: View {
     }
     
     var body: some View {
-        DestinationMapper(destination: viewModel.currentDestination, templatesRepository: templatesRepository)
+        DestinationMapper(
+            destination: viewModel.currentDestination,
+            navigationRepository: navigationRepository,
+            templatesRepository: templatesRepository,
+            tasksRepository: nil
+        )
     }
 }
 
 struct RemindersNavigationView: View {
     @StateObject private var viewModel: NavigationViewModel
+    private let navigationRepository: NavigationRepository
     
     init(repository: NavigationRepository) {
+        self.navigationRepository = repository
         _viewModel = StateObject(wrappedValue: NavigationViewModel(
             repository: repository,
             rootType: NavigationDestinationRemindersRoot.self
@@ -71,25 +89,42 @@ struct RemindersNavigationView: View {
     }
     
     var body: some View {
-        DestinationMapper(destination: viewModel.currentDestination, templatesRepository: nil)
+        DestinationMapper(
+            destination: viewModel.currentDestination,
+            navigationRepository: navigationRepository,
+            templatesRepository: nil,
+            tasksRepository: nil
+        )
     }
 }
 
 struct DestinationMapper: View {
     let destination: NavigationDestination?
+    let navigationRepository: NavigationRepository
     let templatesRepository: TaskTemplatesRepository?
+    let tasksRepository: TasksRepository?
     
     var body: some View {
         Group {
             if let destination = destination {
                 switch destination {
-                case is NavigationDestinationTasksRoot: TasksRootView()
+                case is NavigationDestinationTasksRoot:
+                    if let tasksRepository {
+                        TasksRootView(tasksRepository: tasksRepository, navigationRepository: navigationRepository)
+                    }
                 case is NavigationDestinationTemplatesRoot: 
                     if let repository = templatesRepository {
                         TemplatesRootView(repository: repository)
                     }
                 case is NavigationDestinationRemindersRoot: RemindersRootView()
-                case let details as NavigationDestinationTaskDetails: TaskDetailsView(taskId: details.taskId)
+                case let details as NavigationDestinationTaskDetails:
+                    if let tasksRepository {
+                        TaskDetailsView(
+                            taskId: details.taskId,
+                            tasksRepository: tasksRepository,
+                            navigationRepository: navigationRepository
+                        )
+                    }
                 case let create as NavigationDestinationCreateTask: CreateTaskView(parentTaskId: create.parentTaskId)
                 case let input as NavigationDestinationTemplateNameInput: TemplateNameInputView(templateId: input.templateId)
                 case let details as NavigationDestinationReminderDetails: ReminderDetailsView(reminderId: details.reminderId)

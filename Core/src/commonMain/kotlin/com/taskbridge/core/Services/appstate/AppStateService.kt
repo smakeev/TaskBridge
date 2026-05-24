@@ -20,6 +20,20 @@ internal class AppStateService(
                     )
                 }
             }
+            is AppStateCommand.PushDestination -> {
+                updateState { currentData ->
+                    currentData.copy(
+                        navigationState = currentData.navigationState.push(command.destination)
+                    )
+                }
+            }
+            AppStateCommand.PopDestination -> {
+                updateState { currentData ->
+                    currentData.copy(
+                        navigationState = currentData.navigationState.pop()
+                    )
+                }
+            }
         }
     }
 
@@ -27,5 +41,26 @@ internal class AppStateService(
         tab: com.taskbridge.core.models.navigation.AppTab
     ): NavigationState {
         return copy(selectedTab = tab)
+    }
+
+    private fun NavigationState.push(
+        destination: com.taskbridge.core.models.navigation.NavigationDestination
+    ): NavigationState {
+        val currentPath = paths[selectedTab] ?: return this
+        return copy(
+            paths = paths + (selectedTab to currentPath.copy(
+                destinations = currentPath.destinations + destination
+            ))
+        )
+    }
+
+    private fun NavigationState.pop(): NavigationState {
+        val currentPath = paths[selectedTab] ?: return this
+        if (!currentPath.canGoBack) return this
+        return copy(
+            paths = paths + (selectedTab to currentPath.copy(
+                destinations = currentPath.destinations.dropLast(1)
+            ))
+        )
     }
 }

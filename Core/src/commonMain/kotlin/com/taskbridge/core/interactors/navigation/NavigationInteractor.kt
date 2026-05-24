@@ -1,6 +1,7 @@
 package com.taskbridge.core.interactors.navigation
 
 import com.taskbridge.core.models.navigation.AppTab
+import com.taskbridge.core.models.navigation.NavigationDestination
 import com.taskbridge.core.models.navigation.NavigationOverlay
 import com.taskbridge.core.models.navigation.NavigationPath
 import com.taskbridge.core.usecases.NavigationStateObserverUseCase
@@ -21,6 +22,14 @@ public class NavigationInteractor(
 
     public suspend fun selectTab(tab: AppTab) {
         selectTabUseCase.selectTab(tab)
+    }
+
+    public suspend fun pushDestination(destination: NavigationDestination) {
+        selectTabUseCase.pushDestination(destination)
+    }
+
+    public suspend fun popDestination() {
+        selectTabUseCase.popDestination()
     }
 
     public suspend fun fetchActivePath(): NavigationPath? {

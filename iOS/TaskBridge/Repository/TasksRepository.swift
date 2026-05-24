@@ -8,5 +8,5 @@ protocol TasksRepository {
     func loadTasks() async throws
     func createTask(_ task: TaskItem) async throws
     func replaceTask(_ task: TaskItem) async throws
-    func deleteTaskTree(_ taskId: TaskId) async throws
+    func deleteTaskTree(_ taskId: Any) async throws
 }

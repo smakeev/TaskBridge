@@ -24,4 +24,12 @@ class NavigationRepositoryImpl: NavigationRepository {
     func selectTab(tab: AppTab) async throws {
         try await interactor.selectTab(tab: tab)
     }
+
+    func pushDestination(_ destination: NavigationDestination) async throws {
+        try await interactor.pushDestination(destination: destination)
+    }
+
+    func popDestination() async throws {
+        try await interactor.popDestination()
+    }
 }

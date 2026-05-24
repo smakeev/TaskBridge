@@ -7,8 +7,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -76,7 +76,10 @@ class MainActivity : ComponentActivity() {
                             .padding(paddingValues)
                     ) {
                         when (currentTab) {
-                            AppTab.TASKS -> TasksNavigationScreen(navigationRepository)
+                            AppTab.TASKS -> TasksNavigationScreen(
+                                navigationRepository = navigationRepository,
+                                tasksRepository = tasksRepository
+                            )
                             AppTab.TEMPLATES -> TemplatesNavigationScreen(
                                 navigationRepository = navigationRepository,
                                 templatesRepository = templatesRepository
@@ -91,7 +94,7 @@ class MainActivity : ComponentActivity() {
 
     private fun getIconForTab(tab: AppTab): ImageVector {
         return when (tab) {
-            AppTab.TASKS -> Icons.Default.List
+            AppTab.TASKS -> Icons.AutoMirrored.Filled.List
             AppTab.TEMPLATES -> Icons.Default.DateRange
             AppTab.REMINDERS -> Icons.Default.Notifications
         }

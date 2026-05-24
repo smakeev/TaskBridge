@@ -1,6 +1,7 @@
 package com.taskbridge.android.repository
 
 import com.taskbridge.core.models.navigation.AppTab
+import com.taskbridge.core.models.navigation.NavigationDestination
 import com.taskbridge.core.models.navigation.NavigationOverlay
 import com.taskbridge.core.models.navigation.NavigationPath
 import kotlinx.coroutines.flow.Flow
@@ -11,4 +12,6 @@ interface NavigationRepository {
     val overlay: Flow<NavigationOverlay?>
 
     suspend fun selectTab(tab: AppTab)
+    suspend fun pushDestination(destination: NavigationDestination)
+    suspend fun popDestination()
 }

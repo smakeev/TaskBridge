@@ -5,7 +5,7 @@ import kotlinx.datetime.Clock
 
 /**
  * Recursively flattens a [TaskItem] tree into a list of [TaskEntity].
- * This function treats the receiver as the root of the tree (parentId = null).
+ * This function preserves the receiver's parentId and uses the tree structure for descendants.
  * The tree structure defines the parent-child relationships in the resulting entities.
  */
 internal fun TaskItem.toEntities(
@@ -33,7 +33,7 @@ internal fun TaskItem.toEntities(
         }
     }
 
-    flatten(this, null, 0)
+    flatten(this, parentId?.value, 0)
     return result
 }
 

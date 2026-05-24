@@ -25,7 +25,7 @@ class TasksRepositoryImpl: TasksRepository {
         try await interactor.replaceTask(task: task)
     }
     
-    func deleteTaskTree(_ taskId: TaskId) async throws {
+    func deleteTaskTree(_ taskId: Any) async throws {
         try await interactor.deleteTaskTree(taskId: taskId)
     }
 }
