@@ -2,6 +2,7 @@ package com.taskbridge.core
 
 import com.taskbridge.core.composition.CoreAssembler
 import com.taskbridge.core.events.CoreEventEmitter
+import com.taskbridge.core.handlers.CorePlatformHandlers
 import com.taskbridge.core.interactors.navigation.NavigationInteractor
 import com.taskbridge.core.interactors.tasks.TasksInteractor
 import com.taskbridge.core.interactors.templates.TemplatesInteractor
@@ -12,7 +13,8 @@ import kotlin.reflect.KClass
  * Main entry point for the Core module.
  */
 public class TaskBridge(
-    platformDependencies: PlatformDependencies
+    platformDependencies: PlatformDependencies,
+    platformHandlers: CorePlatformHandlers
 ) {
 
     public companion object {
@@ -26,6 +28,11 @@ public class TaskBridge(
     }
 
     private val assembler = CoreAssembler(platformDependencies)
+
+    init {
+        // Wire the event emitter into platform handlers
+        platformHandlers.reminderHandler.setEventEmitter(assembler.eventEmitter)
+    }
 
     /**
      * Provides access to the event emitter for the platform layer.

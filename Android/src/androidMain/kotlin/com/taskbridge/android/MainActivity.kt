@@ -7,13 +7,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.taskbridge.android.handlers.reminders.AndroidReminderHandler
 import com.taskbridge.android.repository.NavigationRepository
 import com.taskbridge.android.repository.TaskTemplatesRepository
 import com.taskbridge.android.repository.TasksRepository
@@ -24,6 +25,7 @@ import com.taskbridge.android.ui.navigation.RemindersNavigationScreen
 import com.taskbridge.android.ui.navigation.TasksNavigationScreen
 import com.taskbridge.android.ui.navigation.TemplatesNavigationScreen
 import com.taskbridge.core.TaskBridge
+import com.taskbridge.core.handlers.CorePlatformHandlers
 import com.taskbridge.core.models.navigation.AppTab
 import com.taskbridge.core.storage.tasks.PlatformDependencies
 import kotlinx.coroutines.launch
@@ -33,7 +35,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         
         val platformDependencies = PlatformDependencies(this)
-        val taskBridge = TaskBridge(platformDependencies)
+        val platformHandlers = CorePlatformHandlers(
+            reminderHandler = AndroidReminderHandler(this)
+        )
+        val taskBridge = TaskBridge(platformDependencies, platformHandlers)
         
         val navigationInteractor = taskBridge.navigationInteractor()
         val templatesInteractor = taskBridge.templatesInteractor()
@@ -85,7 +90,9 @@ class MainActivity : ComponentActivity() {
                                 templatesRepository = templatesRepository,
                                 tasksRepository = tasksRepository
                             )
-                            AppTab.REMINDERS -> RemindersNavigationScreen(navigationRepository)
+                            AppTab.REMINDERS -> RemindersNavigationScreen(
+                                repository = navigationRepository
+                            )
                         }
                     }
                 }
@@ -95,7 +102,7 @@ class MainActivity : ComponentActivity() {
 
     private fun getIconForTab(tab: AppTab): ImageVector {
         return when (tab) {
-            AppTab.TASKS -> Icons.AutoMirrored.Filled.List
+            AppTab.TASKS -> Icons.Default.List
             AppTab.TEMPLATES -> Icons.Default.DateRange
             AppTab.REMINDERS -> Icons.Default.Notifications
         }

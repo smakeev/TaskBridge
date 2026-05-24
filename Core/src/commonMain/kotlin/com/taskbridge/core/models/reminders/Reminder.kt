@@ -1,9 +1,12 @@
 package com.taskbridge.core.models.reminders
 
+import kotlinx.serialization.Serializable
+
 /**
  * Domain model representing a notification reminder.
  * Reminders are standalone objects that will later be handled by platform-specific logic.
  */
+@Serializable
 public data class Reminder(
     val id: ReminderId,
     val title: String,

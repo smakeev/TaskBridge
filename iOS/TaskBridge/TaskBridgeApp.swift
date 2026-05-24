@@ -39,7 +39,10 @@ struct TaskBridgeApp: App {
     
     init() {
         let platformDependencies = PlatformDependencies()
-        self.taskBridge = TaskBridge(platformDependencies: platformDependencies)
+        let platformHandlers = CorePlatformHandlers(
+            reminderHandler: iOSReminderHandler()
+        )
+        self.taskBridge = TaskBridge(platformDependencies: platformDependencies, platformHandlers: platformHandlers)
         
         let navigationInteractor = taskBridge.navigationInteractor()
         self.navigationRepository = NavigationRepositoryImpl(interactor: navigationInteractor)

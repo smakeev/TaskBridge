@@ -253,6 +253,21 @@ A sealed interface representing incoming events from platform reminder handlers.
 
 ---
 
+## Handlers (Platform to Core)
+Shared interfaces implemented by platforms and injected into Core.
+
+### ReminderHandler
+Public interface for notification scheduling and reminder retrieval. Platforms implement this to provide real notification capabilities.
+- `getAllReminders()`: Retrieves the current scheduled reminders.
+- `scheduleReminder(reminder)`: Schedules a platform notification.
+- `cancelReminder(id)`: Cancels a scheduled notification.
+- Handlers are wired with `CoreEventEmitter` to notify Core of changes.
+
+### CorePlatformHandlers
+Container for all platform handlers, passed to `TaskBridge` during initialization.
+
+---
+
 ## Storage (Internal)
 Internal components for persistence.
 

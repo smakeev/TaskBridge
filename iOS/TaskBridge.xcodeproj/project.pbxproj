@@ -22,6 +22,7 @@
 		40211259DF891C250656FF1A /* NavigationRepositoryImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD776836A7AF68FE1BE1316E /* NavigationRepositoryImpl.swift */; };
 		6BD275F230646BF8E2E435FF /* TaskDetailsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC958C61ACC1F61BBA16A140 /* TaskDetailsView.swift */; };
 		7B92881A356B07AD8426B453 /* TemplateTreeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27C9FBED48AEFDB8615F2E57 /* TemplateTreeView.swift */; };
+		8FC8051767E26D87F92B5B12 /* iOSReminderHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92E32EC5D9198DF66B2FFE15 /* iOSReminderHandler.swift */; };
 		994144BEE92DD29B5BE5AFC4 /* TaskBridgeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E300853D65664E59F553BF7 /* TaskBridgeApp.swift */; };
 		9A341D09DD9AF5B5B71A9FC4 /* ScreenPlaceholderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C278D42D04BA8D5C9CC4FCD /* ScreenPlaceholderView.swift */; };
 		9C01283FD14F64141B9C573E /* TaskEditSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E038DC89354E45F630A46A60 /* TaskEditSheet.swift */; };
@@ -53,6 +54,7 @@
 		8E300853D65664E59F553BF7 /* TaskBridgeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskBridgeApp.swift; sourceTree = "<group>"; };
 		90260F7840C4003D46EAD242 /* FlowUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowUtils.swift; sourceTree = "<group>"; };
 		92A4367BEAE8DB4EA5AA9343 /* NavigationRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationRepository.swift; sourceTree = "<group>"; };
+		92E32EC5D9198DF66B2FFE15 /* iOSReminderHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSReminderHandler.swift; sourceTree = "<group>"; };
 		9542997F782C197AF50B79E7 /* TaskTemplatesRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskTemplatesRepository.swift; sourceTree = "<group>"; };
 		B4D7375A1C9327D972806DEA /* TaskTemplatesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskTemplatesViewModel.swift; sourceTree = "<group>"; };
 		BC958C61ACC1F61BBA16A140 /* TaskDetailsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskDetailsView.swift; sourceTree = "<group>"; };
@@ -93,6 +95,14 @@
 				A204D9399EE66115C4B8F82A /* Impl */,
 			);
 			path = Repository;
+			sourceTree = "<group>";
+		};
+		3449DA6A81190C50EEFA71F6 /* Handlers */ = {
+			isa = PBXGroup;
+			children = (
+				945D15A1EEF9ADCAFEC79AFA /* Reminders */,
+			);
+			path = Handlers;
 			sourceTree = "<group>";
 		};
 		3A9047E2C9ADE6EA6DA00E50 /* Templates */ = {
@@ -141,6 +151,14 @@
 			path = Templates;
 			sourceTree = "<group>";
 		};
+		945D15A1EEF9ADCAFEC79AFA /* Reminders */ = {
+			isa = PBXGroup;
+			children = (
+				92E32EC5D9198DF66B2FFE15 /* iOSReminderHandler.swift */,
+			);
+			path = Reminders;
+			sourceTree = "<group>";
+		};
 		A204D9399EE66115C4B8F82A /* Impl */ = {
 			isa = PBXGroup;
 			children = (
@@ -165,6 +183,7 @@
 			children = (
 				EA8F2A875CDF1E5AA309B600 /* ContentView.swift */,
 				8E300853D65664E59F553BF7 /* TaskBridgeApp.swift */,
+				3449DA6A81190C50EEFA71F6 /* Handlers */,
 				1983F476E2A2FEA90DAC9B37 /* Repository */,
 				FCE693FB3A349D573DE9C978 /* UI */,
 				052143E29F349A76091796CE /* Utils */,
@@ -307,6 +326,7 @@
 				325CBBA65AF6DEA1BF66F1D6 /* TemplateNameInputView.swift in Sources */,
 				7B92881A356B07AD8426B453 /* TemplateTreeView.swift in Sources */,
 				3F190836AB347667BF111BE8 /* TemplatesRootView.swift in Sources */,
+				8FC8051767E26D87F92B5B12 /* iOSReminderHandler.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
