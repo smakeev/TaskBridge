@@ -10,6 +10,7 @@ package com.taskbridge.core.models.tasks
  */
 public data class TaskItem(
     val id: TaskId,
+    val parentId: TaskId?,
     val title: String,
     val type: TaskType,
     val isDone: Boolean?,

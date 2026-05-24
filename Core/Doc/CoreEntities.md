@@ -177,7 +177,7 @@ An enum representing the three mutually exclusive task kinds: `CHECKBOX`, `PROGR
 A value class for tracking progress (0 to 100).
 
 #### TaskItem
-The central task domain model. It supports recursive parent-child structures for `CONTAINER` tasks. Completion state (`isCompleted`) is derived based on the task type (e.g., containers are completed only if all their children are completed).
+The central task domain model. It supports recursive parent-child structures for `CONTAINER` tasks via the `children` list. It also includes an explicit `parentId` relation to support persistence, identity linkage, and future tree operations. Completion state (`isCompleted`) is derived based on the task type (e.g., containers are completed only if all their children are completed).
 
 ---
 
