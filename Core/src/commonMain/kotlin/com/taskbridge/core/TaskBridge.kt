@@ -1,6 +1,7 @@
 package com.taskbridge.core
 
 import com.taskbridge.core.composition.CoreAssembler
+import com.taskbridge.core.events.CoreEventEmitter
 import com.taskbridge.core.interactors.navigation.NavigationInteractor
 import com.taskbridge.core.interactors.tasks.TasksInteractor
 import com.taskbridge.core.interactors.templates.TemplatesInteractor
@@ -25,6 +26,12 @@ public class TaskBridge(
     }
 
     private val assembler = CoreAssembler(platformDependencies)
+
+    /**
+     * Provides access to the event emitter for the platform layer.
+     */
+    public val eventEmitter: CoreEventEmitter
+        get() = assembler.eventEmitter
 
     /**
      * Provides access to the navigation interactor.

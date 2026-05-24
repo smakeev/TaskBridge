@@ -4,9 +4,25 @@ This document describes the entities in the TaskBridge Core module.
 
 ## Core Entry Point
 ### TaskBridge
-The main entry point for the Core module. It provides access to public Interactors (e.g., `navigationInteractor()`). Internal Use Case access is hidden from the platform.
+The main entry point for the Core module. It provides access to public Interactors and the `CoreEventEmitter`.
 - `TEMPLATES_URL`: Constant URL for fetching task templates.
 - `TEMPLATES_TTL_MILLIS`: Constant TTL for task templates caching.
+- `eventEmitter`: Entry point for platform events.
+
+---
+
+## Events (Core to Platform Bridge)
+Internal and public components for event-driven communication.
+
+### CoreEventEmitter
+Public facade for emitting events from platforms into Core.
+- `remindersUpdated(reminders: List<Reminder>)`: Notifies Core about platform reminder list changes.
+
+### CoreEventBus (Internal)
+A generic, thread-safe event bus implementation using `MutableSharedFlow`.
+
+### CoreEventBuses (Internal)
+Container for all internal event buses (e.g., `reminderEvents`).
 
 ---
 
