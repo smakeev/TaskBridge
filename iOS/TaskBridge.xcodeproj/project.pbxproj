@@ -10,10 +10,13 @@
 		033AE0391CDF018ABD02B737 /* FlowUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90260F7840C4003D46EAD242 /* FlowUtils.swift */; };
 		0776859050028A3FEE77110D /* NavigationContainers.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1C02803533B2D78658ABB95 /* NavigationContainers.swift */; };
 		173C2B09580E1AA33E3C2ABA /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA8F2A875CDF1E5AA309B600 /* ContentView.swift */; };
+		31453A9C26D2CCA00297FFFE /* TaskTemplatesRepositoryImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5F840A986ABC08789C90EA6 /* TaskTemplatesRepositoryImpl.swift */; };
 		40211259DF891C250656FF1A /* NavigationRepositoryImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD776836A7AF68FE1BE1316E /* NavigationRepositoryImpl.swift */; };
 		67D6AE94D9D64BB623A2D376 /* Screens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BEB3299D0A3F4240EBF37FE /* Screens.swift */; };
 		994144BEE92DD29B5BE5AFC4 /* TaskBridgeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E300853D65664E59F553BF7 /* TaskBridgeApp.swift */; };
 		A7F34EC45AE2645D00C047AF /* NavigationRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92A4367BEAE8DB4EA5AA9343 /* NavigationRepository.swift */; };
+		C5613BD9842D6B9A78D29EA4 /* TaskTemplatesRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9542997F782C197AF50B79E7 /* TaskTemplatesRepository.swift */; };
+		F3EF7B87455E1017F1F8B0B6 /* TaskTemplatesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4D7375A1C9327D972806DEA /* TaskTemplatesViewModel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -23,11 +26,15 @@
 		1B97E63E00F5973C853BA16A /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
 		549A51DB6F117F9A1E388981 /* TaskBridge.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = TaskBridge.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5BEB3299D0A3F4240EBF37FE /* Screens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Screens.swift; sourceTree = "<group>"; };
+		79F715BC0F66D0E066E57B64 /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
 		8E300853D65664E59F553BF7 /* TaskBridgeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskBridgeApp.swift; sourceTree = "<group>"; };
 		90260F7840C4003D46EAD242 /* FlowUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowUtils.swift; sourceTree = "<group>"; };
 		92A4367BEAE8DB4EA5AA9343 /* NavigationRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationRepository.swift; sourceTree = "<group>"; };
+		9542997F782C197AF50B79E7 /* TaskTemplatesRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskTemplatesRepository.swift; sourceTree = "<group>"; };
+		B4D7375A1C9327D972806DEA /* TaskTemplatesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskTemplatesViewModel.swift; sourceTree = "<group>"; };
 		D89970E7DAE2C573959AE83F /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
 		DD776836A7AF68FE1BE1316E /* NavigationRepositoryImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationRepositoryImpl.swift; sourceTree = "<group>"; };
+		E5F840A986ABC08789C90EA6 /* TaskTemplatesRepositoryImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskTemplatesRepositoryImpl.swift; sourceTree = "<group>"; };
 		EA8F2A875CDF1E5AA309B600 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		F1C02803533B2D78658ABB95 /* NavigationContainers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationContainers.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -55,6 +62,7 @@
 			children = (
 				0B3AF71ADBE0A464992FF535 /* .gitkeep */,
 				92A4367BEAE8DB4EA5AA9343 /* NavigationRepository.swift */,
+				9542997F782C197AF50B79E7 /* TaskTemplatesRepository.swift */,
 				A204D9399EE66115C4B8F82A /* Impl */,
 			);
 			path = Repository;
@@ -69,11 +77,21 @@
 			path = Navigation;
 			sourceTree = "<group>";
 		};
+		7918431021088B4179B287A7 /* Templates */ = {
+			isa = PBXGroup;
+			children = (
+				79F715BC0F66D0E066E57B64 /* .gitkeep */,
+				B4D7375A1C9327D972806DEA /* TaskTemplatesViewModel.swift */,
+			);
+			path = Templates;
+			sourceTree = "<group>";
+		};
 		A204D9399EE66115C4B8F82A /* Impl */ = {
 			isa = PBXGroup;
 			children = (
 				1471703C39D83E55CB6ACF6B /* .gitkeep */,
 				DD776836A7AF68FE1BE1316E /* NavigationRepositoryImpl.swift */,
+				E5F840A986ABC08789C90EA6 /* TaskTemplatesRepositoryImpl.swift */,
 			);
 			path = Impl;
 			sourceTree = "<group>";
@@ -112,6 +130,7 @@
 			children = (
 				671411942B23ED6DE106AA53 /* Navigation */,
 				E82B1446E76A6F3DED9F7CE5 /* Screens */,
+				7918431021088B4179B287A7 /* Templates */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -201,6 +220,9 @@
 				40211259DF891C250656FF1A /* NavigationRepositoryImpl.swift in Sources */,
 				67D6AE94D9D64BB623A2D376 /* Screens.swift in Sources */,
 				994144BEE92DD29B5BE5AFC4 /* TaskBridgeApp.swift in Sources */,
+				C5613BD9842D6B9A78D29EA4 /* TaskTemplatesRepository.swift in Sources */,
+				31453A9C26D2CCA00297FFFE /* TaskTemplatesRepositoryImpl.swift in Sources */,
+				F3EF7B87455E1017F1F8B0B6 /* TaskTemplatesViewModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

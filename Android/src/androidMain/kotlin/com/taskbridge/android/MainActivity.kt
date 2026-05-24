@@ -15,7 +15,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.taskbridge.android.repository.NavigationRepository
+import com.taskbridge.android.repository.TaskTemplatesRepository
 import com.taskbridge.android.repository.impl.NavigationRepositoryImpl
+import com.taskbridge.android.repository.impl.TaskTemplatesRepositoryImpl
 import com.taskbridge.android.ui.navigation.RemindersNavigationScreen
 import com.taskbridge.android.ui.navigation.TasksNavigationScreen
 import com.taskbridge.android.ui.navigation.TemplatesNavigationScreen
@@ -29,11 +31,14 @@ class MainActivity : ComponentActivity() {
         
         val taskBridge = TaskBridge()
         val navigationInteractor = taskBridge.navigationInteractor()
-        val repository: NavigationRepository = NavigationRepositoryImpl(navigationInteractor)
+        val templatesInteractor = taskBridge.templatesInteractor()
+        
+        val navigationRepository: NavigationRepository = NavigationRepositoryImpl(navigationInteractor)
+        val templatesRepository: TaskTemplatesRepository = TaskTemplatesRepositoryImpl(templatesInteractor)
 
         setContent {
             val scope = rememberCoroutineScope()
-            val currentTab by repository.currentTab.collectAsState(initial = AppTab.TASKS)
+            val currentTab by navigationRepository.currentTab.collectAsState(initial = AppTab.TASKS)
 
             MaterialTheme {
                 Scaffold(
@@ -44,7 +49,7 @@ class MainActivity : ComponentActivity() {
                                     selected = currentTab == tab,
                                     onClick = {
                                         scope.launch {
-                                            repository.selectTab(tab)
+                                            navigationRepository.selectTab(tab)
                                         }
                                     },
                                     icon = {
@@ -64,9 +69,12 @@ class MainActivity : ComponentActivity() {
                             .padding(paddingValues)
                     ) {
                         when (currentTab) {
-                            AppTab.TASKS -> TasksNavigationScreen(repository)
-                            AppTab.TEMPLATES -> TemplatesNavigationScreen(repository)
-                            AppTab.REMINDERS -> RemindersNavigationScreen(repository)
+                            AppTab.TASKS -> TasksNavigationScreen(navigationRepository)
+                            AppTab.TEMPLATES -> TemplatesNavigationScreen(
+                                navigationRepository = navigationRepository,
+                                templatesRepository = templatesRepository
+                            )
+                            AppTab.REMINDERS -> RemindersNavigationScreen(navigationRepository)
                         }
                     }
                 }

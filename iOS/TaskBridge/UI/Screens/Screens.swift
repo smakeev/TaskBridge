@@ -8,8 +8,46 @@ struct TasksRootView: View {
 }
 
 struct TemplatesRootView: View {
+    @StateObject private var viewModel: TaskTemplatesViewModel
+    
+    init(repository: TaskTemplatesRepository) {
+        _viewModel = StateObject(wrappedValue: TaskTemplatesViewModel(repository: repository))
+    }
+    
     var body: some View {
-        ScreenPlaceholder(title: "Templates Root")
+        VStack {
+            HStack {
+                Text("Templates")
+                    .font(.largeTitle)
+                    .bold()
+                Spacer()
+            }
+            .padding()
+            
+            if viewModel.state.isLoading && viewModel.state.templates.isEmpty {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                List {
+                    if let error = viewModel.state.errorMessage {
+                        Text(error)
+                            .foregroundColor(.red)
+                    }
+                    
+                    let templates = viewModel.state.templates.map { $0 }
+                    ForEach(templates, id: \.self) { template in
+                        Text(template.title)
+                            .padding(.vertical, 4)
+                    }
+                }
+                .refreshable {
+                    await viewModel.refreshTemplates()
+                }
+            }
+        }
+        .task {
+            viewModel.loadTemplates()
+        }
     }
 }
 
