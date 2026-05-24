@@ -221,6 +221,16 @@ The central task domain model. It supports recursive parent-child structures for
 #### TasksState
 Public state model for tasks, including the task tree list, loading status, and error messages.
 
+### Reminders
+#### ReminderId
+A value class representing a unique identifier for a reminder.
+
+#### ReminderType
+An enum representing the type of reminder: `START` (exact time) or `DEADLINE` (relative to a deadline).
+
+#### Reminder
+The central reminder domain model. Reminders are standalone objects containing notification content and trigger timing. Platform-specific handlers will later be responsible for scheduling and canceling real notifications based on these models.
+
 ---
 
 ## Storage (Internal)
