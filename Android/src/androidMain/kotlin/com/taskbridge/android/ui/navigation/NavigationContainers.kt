@@ -4,6 +4,9 @@ import androidx.compose.runtime.*
 import com.taskbridge.android.repository.NavigationRepository
 import com.taskbridge.android.repository.TaskTemplatesRepository
 import com.taskbridge.android.ui.screens.*
+import com.taskbridge.android.ui.screens.reminders.RemindersRootScreen
+import com.taskbridge.android.ui.screens.tasks.TasksRootScreen
+import com.taskbridge.android.ui.screens.templates.TemplatesRootScreen
 import com.taskbridge.core.models.navigation.NavigationDestination
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
