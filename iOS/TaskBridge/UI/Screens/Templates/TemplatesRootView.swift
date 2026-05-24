@@ -4,8 +4,16 @@ import TaskBridgeCore
 struct TemplatesRootView: View {
     @StateObject private var viewModel: TaskTemplatesViewModel
     
-    init(repository: TaskTemplatesRepository) {
-        _viewModel = StateObject(wrappedValue: TaskTemplatesViewModel(repository: repository))
+    init(
+        repository: TaskTemplatesRepository,
+        tasksRepository: TasksRepository,
+        navigationRepository: NavigationRepository
+    ) {
+        _viewModel = StateObject(wrappedValue: TaskTemplatesViewModel(
+            repository: repository,
+            tasksRepository: tasksRepository,
+            navigationRepository: navigationRepository
+        ))
     }
     
     var body: some View {
@@ -29,7 +37,10 @@ struct TemplatesRootView: View {
                     
                     let templates = viewModel.state.templates.map { $0 }
                     ForEach(templates, id: \.rootTask.id) { template in
-                        TemplateCardView(template: template)
+                        TemplateCardView(
+                            template: template,
+                            onAddTask: viewModel.addTask
+                        )
                     }
                 }
             }
@@ -59,18 +70,33 @@ struct TemplatesRootView: View {
 
 private struct TemplateCardView: View {
     let template: TaskTemplate
+    let onAddTask: (TaskTemplate, String) -> Void
     @State private var expandedNodeIds: Set<String> = []
+    @State private var isShowingNameInput = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(template.title)
-                    .font(.headline)
-                    .foregroundColor(.primary)
-                Text(template.description_)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(template.title)
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    Text(template.description_)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Button {
+                    isShowingNameInput = true
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.headline)
+                        .frame(width: 32, height: 32)
+                }
+                .buttonStyle(.bordered)
+                .accessibilityLabel("Add task from template")
             }
             
             Divider()
@@ -85,6 +111,49 @@ private struct TemplateCardView: View {
         }
         .onAppear {
             expandedNodeIds.insert(template.rootTask.id)
+        }
+        .sheet(isPresented: $isShowingNameInput) {
+            TemplateTitleInputSheet(initialTitle: template.title) { title in
+                onAddTask(template, title)
+                isShowingNameInput = false
+            }
+        }
+    }
+}
+
+private struct TemplateTitleInputSheet: View {
+    let initialTitle: String
+    let onAdd: (String) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var title: String
+
+    init(initialTitle: String, onAdd: @escaping (String) -> Void) {
+        self.initialTitle = initialTitle
+        self.onAdd = onAdd
+        _title = State(initialValue: initialTitle)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                TextField("Title", text: $title)
+            }
+            .navigationTitle("Task title")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Add") {
+                        onAdd(title)
+                        dismiss()
+                    }
+                    .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
         }
     }
 }

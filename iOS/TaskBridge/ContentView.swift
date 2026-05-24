@@ -17,7 +17,11 @@ struct ContentView: View {
                         }
                         .tag(AppTab.tasks)
                     
-                    TemplatesNavigationView(navigationRepository: navRepo, templatesRepository: templatesRepo)
+                    TemplatesNavigationView(
+                        navigationRepository: navRepo,
+                        templatesRepository: templatesRepo,
+                        tasksRepository: tasksRepo
+                    )
                         .tabItem {
                             Image(systemName: getSFSymbol(for: AppTab.templates.iconKey))
                         }

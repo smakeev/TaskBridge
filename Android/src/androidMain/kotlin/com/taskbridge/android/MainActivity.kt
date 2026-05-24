@@ -82,7 +82,8 @@ class MainActivity : ComponentActivity() {
                             )
                             AppTab.TEMPLATES -> TemplatesNavigationScreen(
                                 navigationRepository = navigationRepository,
-                                templatesRepository = templatesRepository
+                                templatesRepository = templatesRepository,
+                                tasksRepository = tasksRepository
                             )
                             AppTab.REMINDERS -> RemindersNavigationScreen(navigationRepository)
                         }

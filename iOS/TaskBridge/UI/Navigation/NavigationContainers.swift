@@ -56,10 +56,16 @@ struct TemplatesNavigationView: View {
     @StateObject private var viewModel: NavigationViewModel
     private let navigationRepository: NavigationRepository
     private let templatesRepository: TaskTemplatesRepository
+    private let tasksRepository: TasksRepository
     
-    init(navigationRepository: NavigationRepository, templatesRepository: TaskTemplatesRepository) {
+    init(
+        navigationRepository: NavigationRepository,
+        templatesRepository: TaskTemplatesRepository,
+        tasksRepository: TasksRepository
+    ) {
         self.navigationRepository = navigationRepository
         self.templatesRepository = templatesRepository
+        self.tasksRepository = tasksRepository
         _viewModel = StateObject(wrappedValue: NavigationViewModel(
             repository: navigationRepository,
             rootType: NavigationDestinationTemplatesRoot.self
@@ -71,7 +77,7 @@ struct TemplatesNavigationView: View {
             destination: viewModel.currentDestination,
             navigationRepository: navigationRepository,
             templatesRepository: templatesRepository,
-            tasksRepository: nil
+            tasksRepository: tasksRepository
         )
     }
 }
@@ -113,8 +119,12 @@ struct DestinationMapper: View {
                         TasksRootView(tasksRepository: tasksRepository, navigationRepository: navigationRepository)
                     }
                 case is NavigationDestinationTemplatesRoot: 
-                    if let repository = templatesRepository {
-                        TemplatesRootView(repository: repository)
+                    if let repository = templatesRepository, let tasksRepository {
+                        TemplatesRootView(
+                            repository: repository,
+                            tasksRepository: tasksRepository,
+                            navigationRepository: navigationRepository
+                        )
                     }
                 case is NavigationDestinationRemindersRoot: RemindersRootView()
                 case let details as NavigationDestinationTaskDetails:

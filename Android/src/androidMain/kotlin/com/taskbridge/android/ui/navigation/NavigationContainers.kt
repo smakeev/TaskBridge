@@ -31,7 +31,8 @@ fun TasksNavigationScreen(
 @Composable
 fun TemplatesNavigationScreen(
     navigationRepository: NavigationRepository,
-    templatesRepository: TaskTemplatesRepository
+    templatesRepository: TaskTemplatesRepository,
+    tasksRepository: TasksRepository
 ) {
     val currentDestination by remember(navigationRepository) {
         navigationRepository.activePath
@@ -40,7 +41,7 @@ fun TemplatesNavigationScreen(
     }.collectAsState(initial = NavigationDestination.TemplatesRoot)
 
     val scope = rememberCoroutineScope()
-    DestinationMapper(currentDestination, templatesRepository, null, navigationRepository, scope)
+    DestinationMapper(currentDestination, templatesRepository, tasksRepository, navigationRepository, scope)
 }
 
 @Composable
@@ -70,8 +71,8 @@ private fun DestinationMapper(
             }
         }
         is NavigationDestination.TemplatesRoot -> {
-            if (templatesRepository != null) {
-                TemplatesRootScreen(templatesRepository)
+            if (templatesRepository != null && tasksRepository != null) {
+                TemplatesRootScreen(templatesRepository, tasksRepository, navigationRepository)
             }
         }
         is NavigationDestination.RemindersRoot -> RemindersRootScreen()
