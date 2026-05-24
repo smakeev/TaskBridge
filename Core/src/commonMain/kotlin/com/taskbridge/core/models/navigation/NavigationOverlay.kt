@@ -1,38 +1,38 @@
 package com.taskbridge.core.models.navigation
 
-sealed interface NavigationOverlay {
+public sealed interface NavigationOverlay {
 
-    data class Alert(
+    public data class Alert(
         val alertId: String?,
         val titleKey: String,
         val messageKey: String,
         val actions: List<OverlayAction>
     ) : NavigationOverlay
 
-    data class Sheet(
+    public data class Sheet(
         val path: List<OverlayDestination>
     ) : NavigationOverlay
 
-    data class BottomOverlay(
+    public data class BottomOverlay(
         val heightPercent: Float,
         val path: List<OverlayDestination>
     ) : NavigationOverlay
 }
 
-sealed interface OverlayDestination {
+public sealed interface OverlayDestination {
 
-    data class SelectTaskType(
+    public data class SelectTaskType(
         val parentTaskId: String?
     ) : OverlayDestination
 }
 
-data class OverlayAction(
+public data class OverlayAction(
     val actionId: String,
     val titleKey: String,
     val style: OverlayActionStyle
 )
 
-enum class OverlayActionStyle {
+public enum class OverlayActionStyle {
     DEFAULT,
     CANCEL,
     DESTRUCTIVE

@@ -1,6 +1,6 @@
 package com.taskbridge.core.models.templates
 
-data class TaskTemplate(
+public data class TaskTemplate(
     val id: TemplateId,
     val title: String,
     val description: String,

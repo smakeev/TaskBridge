@@ -9,7 +9,7 @@ import kotlinx.coroutines.launch
  * Abstract base class for stateless services.
  * Implements a sequential request processing loop using a mailbox pattern.
  */
-public abstract class BaseStatelessService<R : ServiceRequest, T>(
+internal abstract class BaseStatelessService<R : ServiceRequest, T>(
     scope: CoroutineScope
 ) : StatelessService<R, T> {
 
@@ -18,6 +18,9 @@ public abstract class BaseStatelessService<R : ServiceRequest, T>(
     init {
         scope.launch {
             for (envelope in mailbox) {
+                if (envelope.deferred.isCancelled) {
+                    continue
+                }
                 try {
                     val result = handleRequest(envelope.request)
                     envelope.deferred.complete(result)

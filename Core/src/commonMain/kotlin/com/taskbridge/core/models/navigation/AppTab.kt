@@ -1,6 +1,6 @@
 package com.taskbridge.core.models.navigation
 
-enum class AppTab(
+public enum class AppTab(
     val titleKey: String,
     val iconKey: String
 ) {

@@ -1,6 +1,6 @@
 package com.taskbridge.core.models.navigation
 
-sealed interface NavigationDestination {
+public sealed interface NavigationDestination {
 
     data object TasksRoot : NavigationDestination
 
@@ -8,19 +8,19 @@ sealed interface NavigationDestination {
 
     data object RemindersRoot : NavigationDestination
 
-    data class TaskDetails(
+    public data class TaskDetails(
         val taskId: String
     ) : NavigationDestination
 
-    data class CreateTask(
+    public data class CreateTask(
         val parentTaskId: String?
     ) : NavigationDestination
 
-    data class TemplateNameInput(
+    public data class TemplateNameInput(
         val templateId: String
     ) : NavigationDestination
 
-    data class ReminderDetails(
+    public data class ReminderDetails(
         val reminderId: String
     ) : NavigationDestination
 

@@ -1,3 +1,6 @@
 package com.taskbridge.core.services.common
 
-interface Service
+/**
+ * Base interface for all services.
+ */
+public interface Service

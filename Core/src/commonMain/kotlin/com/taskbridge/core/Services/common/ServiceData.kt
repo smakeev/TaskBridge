@@ -1,3 +1,6 @@
 package com.taskbridge.core.services.common
 
-interface ServiceData
+/**
+ * Marker interface for data structures used by stateful services.
+ */
+public interface ServiceData

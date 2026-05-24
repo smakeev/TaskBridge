@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-abstract class BaseStatefulService<C : ServiceCommand, D : ServiceData>(
+internal abstract class BaseStatefulService<C : ServiceCommand, D : ServiceData>(
     initialData: D,
     scope: CoroutineScope
 ) : StatefulService<C, D> {

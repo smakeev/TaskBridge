@@ -1,3 +1,6 @@
 package com.taskbridge.core.services.common
 
-interface ServiceCommand
+/**
+ * Marker interface for commands that can be processed by stateful services.
+ */
+public interface ServiceCommand

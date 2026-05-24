@@ -6,7 +6,7 @@ import com.taskbridge.core.models.navigation.NavigationPath
 import com.taskbridge.core.models.navigation.NavigationState
 import com.taskbridge.core.services.common.ServiceData
 
-data class AppStateServiceData(
+internal data class AppStateServiceData(
     val navigationState: NavigationState = initialNavigationState()
 ) : ServiceData
 

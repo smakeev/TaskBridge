@@ -79,7 +79,7 @@ Observes or fetches navigation-related state.
 ### Service
 Base interface for all services.
 
-### BaseStatefulService
+### BaseStatefulService (Internal)
 Abstract base class for stateful services using the Actor pattern.
 
 ### StatefulService
@@ -94,8 +94,8 @@ A marker interface for requests that can be processed by stateless services.
 ### StatelessService
 A generic interface for services that process requests and return results without maintaining long-living state.
 
-### BaseStatelessService
-An abstract base class for stateless services. It implements a sequential request processing loop using a mailbox pattern and provides deferred responses to callers.
+### BaseStatelessService (Internal)
+Abstract base class for stateless services. It implements a sequential request processing loop using a mailbox pattern and provides deferred responses to callers. It skips processing for requests that were cancelled while in the mailbox.
 
 ---
 

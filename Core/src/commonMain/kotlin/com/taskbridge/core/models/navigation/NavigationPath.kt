@@ -1,6 +1,6 @@
 package com.taskbridge.core.models.navigation
 
-data class NavigationPath(
+public data class NavigationPath(
     val destinations: List<NavigationDestination>
 ) {
     val root: NavigationDestination?
