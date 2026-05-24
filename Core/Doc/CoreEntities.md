@@ -12,7 +12,7 @@ The main entry point for the Core module. It provides access to public Interacto
 High-level bridges used by the platform to interact with the Core.
 
 ### NavigationInteractor
-Public class providing a simplified interface for navigation logic. Assembled by the `CoreAssembler`.
+Public class providing a simplified interface for navigation logic. Assembled by the `CoreAssembler`. Platform-side implementations (like `NavigationRepository`) should ensure proper lifecycle management of the exposed Flows/Streams to prevent leaks.
 - `activePath`: `Flow<NavigationPath?>`
 - `currentTab`: `Flow<AppTab>`
 - `overlay`: `Flow<NavigationOverlay?>`
