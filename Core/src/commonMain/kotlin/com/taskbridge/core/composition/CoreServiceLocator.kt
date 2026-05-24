@@ -5,6 +5,7 @@ import com.taskbridge.core.network.JsonRequestManager
 import com.taskbridge.core.services.appstate.AppStateService
 import com.taskbridge.core.services.network.NetworkService
 import com.taskbridge.core.services.remote.RemoteResourceService
+import com.taskbridge.core.services.tasks.TasksService
 import com.taskbridge.core.storage.tasks.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -51,6 +52,13 @@ internal class CoreServiceLocator(
         TaskStorageManager(taskDatabaseInstance)
     }
 
+    private val tasksServiceInstance: TasksService by lazy {
+        TasksService(
+            scope = scope,
+            storageManager = taskStorageManagerInstance
+        )
+    }
+
     fun appStateService(): AppStateService = appStateServiceInstance
 
     fun networkService(): NetworkService = networkServiceInstance
@@ -58,4 +66,6 @@ internal class CoreServiceLocator(
     fun remoteResourceService(): RemoteResourceService = remoteResourceServiceInstance
 
     fun taskStorageManager(): TaskStorageManager = taskStorageManagerInstance
+
+    fun tasksService(): TasksService = tasksServiceInstance
 }

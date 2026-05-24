@@ -115,6 +115,9 @@ Interface for services with reactive state and command processing.
 ### AppStateService (Internal)
 Manages the application state, including navigation.
 
+### TasksService (Internal)
+Stateful service that owns the task tree state. It persists changes through `TaskStorageManager` and ensures deterministic behavior by reloading state from storage after mutations. Supported operations include loading, creating, replacing subtrees, and deleting subtrees.
+
 ### NetworkService (Internal)
 Stateless service for network operations. Wraps `JsonRequestManager` and provide sequential handling for JSON loading requests. Does not cache results.
 
