@@ -12,11 +12,13 @@ import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.taskbridge.android.repository.NavigationRepository
 import com.taskbridge.android.repository.impl.NavigationRepositoryImpl
+import com.taskbridge.android.ui.navigation.RemindersNavigationScreen
+import com.taskbridge.android.ui.navigation.TasksNavigationScreen
+import com.taskbridge.android.ui.navigation.TemplatesNavigationScreen
 import com.taskbridge.core.TaskBridge
 import com.taskbridge.core.models.navigation.AppTab
 import kotlinx.coroutines.launch
@@ -59,10 +61,13 @@ class MainActivity : ComponentActivity() {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(paddingValues),
-                        contentAlignment = Alignment.Center
+                            .padding(paddingValues)
                     ) {
-                        Text(text = "Current Tab: ${currentTab.name}")
+                        when (currentTab) {
+                            AppTab.TASKS -> TasksNavigationScreen(repository)
+                            AppTab.TEMPLATES -> TemplatesNavigationScreen(repository)
+                            AppTab.REMINDERS -> RemindersNavigationScreen(repository)
+                        }
                     }
                 }
             }

@@ -13,13 +13,23 @@ struct ContentView: View {
     
     var body: some View {
         TabView(selection: $selectedTab) {
-            ForEach(AppTab.companion.allCases, id: \.self) { tab in
-                Text("Content for \(tab.titleKey)")
-                    .tabItem {
-                        Image(systemName: getSFSymbol(for: tab.iconKey))
-                    }
-                    .tag(tab)
-            }
+            TasksNavigationView(repository: repository)
+                .tabItem {
+                    Image(systemName: getSFSymbol(for: AppTab.tasks.iconKey))
+                }
+                .tag(AppTab.tasks)
+            
+            TemplatesNavigationView(repository: repository)
+                .tabItem {
+                    Image(systemName: getSFSymbol(for: AppTab.templates.iconKey))
+                }
+                .tag(AppTab.templates)
+            
+            RemindersNavigationView(repository: repository)
+                .tabItem {
+                    Image(systemName: getSFSymbol(for: AppTab.reminders.iconKey))
+                }
+                .tag(AppTab.reminders)
         }
         .onChange(of: selectedTab) { newTab in
             Task {
@@ -27,7 +37,7 @@ struct ContentView: View {
             }
         }
         .task {
-            // Fully core-driven navigation
+            // Observe tab changes from Core
             for await tab in repository.currentTab {
                 if selectedTab != tab {
                     selectedTab = tab
