@@ -27,4 +27,8 @@ class NavigationRepositoryImpl(
     override suspend fun popDestination() {
         interactor.popDestination()
     }
+
+    override suspend fun pullToRoot(tab: AppTab) {
+        interactor.pullToRoot(tab)
+    }
 }

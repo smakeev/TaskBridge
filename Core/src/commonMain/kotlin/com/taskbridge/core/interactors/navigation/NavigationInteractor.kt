@@ -34,6 +34,10 @@ public class NavigationInteractor(
         pushNavigationUseCase.popDestination()
     }
 
+    public suspend fun pullToRoot(tab: AppTab) {
+        pushNavigationUseCase.pullToRoot(tab)
+    }
+
     public suspend fun fetchActivePath(): NavigationPath? {
         return observerUseCase.fetchActivePath()
     }

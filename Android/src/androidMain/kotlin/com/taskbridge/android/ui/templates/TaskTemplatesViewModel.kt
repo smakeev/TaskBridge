@@ -62,6 +62,7 @@ class TaskTemplatesViewModel(
         viewModelScope.launch {
             runCatching {
                 tasksRepository.createTask(template.rootTask.toTaskItem(parentId = null, titleOverride = trimmedTitle))
+                navigationRepository.pullToRoot(AppTab.TASKS)
                 navigationRepository.selectTab(AppTab.TASKS)
             }
         }

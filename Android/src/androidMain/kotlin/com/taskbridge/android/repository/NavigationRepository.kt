@@ -14,4 +14,5 @@ interface NavigationRepository {
     suspend fun selectTab(tab: AppTab)
     suspend fun pushDestination(destination: NavigationDestination)
     suspend fun popDestination()
+    suspend fun pullToRoot(tab: AppTab)
 }

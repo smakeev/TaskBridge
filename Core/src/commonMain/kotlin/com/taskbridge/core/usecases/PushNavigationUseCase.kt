@@ -1,6 +1,7 @@
 package com.taskbridge.core.usecases
 
 import com.taskbridge.core.composition.CoreAssembler
+import com.taskbridge.core.models.navigation.AppTab
 import com.taskbridge.core.models.navigation.NavigationDestination
 
 /**
@@ -17,5 +18,10 @@ public class PushNavigationUseCase internal constructor(
     public suspend fun popDestination() {
         val story = assembler.stories.popDestination(assembler)
         story()
+    }
+
+    public suspend fun pullToRoot(tab: AppTab) {
+        val story = assembler.stories.pullToRoot(assembler)
+        story(tab)
     }
 }

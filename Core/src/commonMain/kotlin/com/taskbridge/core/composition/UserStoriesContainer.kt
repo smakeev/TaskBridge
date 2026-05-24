@@ -15,6 +15,8 @@ internal class UserStoriesContainer {
     fun pushDestination(assembler: CoreAssembler): PushDestinationStory = PushDestinationStory(assembler)
 
     fun popDestination(assembler: CoreAssembler): PopDestinationStory = PopDestinationStory(assembler)
+
+    fun pullToRoot(assembler: CoreAssembler): PullToRootStory = PullToRootStory(assembler)
     
     fun getAppStateService(assembler: CoreAssembler): GetAppStateServiceStory = GetAppStateServiceStory(assembler)
 

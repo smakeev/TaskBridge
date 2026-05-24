@@ -47,6 +47,7 @@ class TaskTemplatesViewModel: ObservableObject {
             try? await tasksRepository.createTask(
                 makeTask(from: template.rootTask, parentId: nil, titleOverride: trimmedTitle)
             )
+            try? await navigationRepository.pullToRoot(tab: .tasks)
             try? await navigationRepository.selectTab(tab: .tasks)
         }
     }

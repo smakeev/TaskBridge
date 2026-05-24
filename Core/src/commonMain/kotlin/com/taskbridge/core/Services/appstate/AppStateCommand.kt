@@ -14,4 +14,8 @@ internal sealed interface AppStateCommand : ServiceCommand {
     ) : AppStateCommand
 
     data object PopDestination : AppStateCommand
+
+    data class PullToRoot(
+        val tab: AppTab
+    ) : AppStateCommand
 }

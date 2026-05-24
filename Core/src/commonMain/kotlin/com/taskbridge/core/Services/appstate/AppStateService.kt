@@ -34,6 +34,13 @@ internal class AppStateService(
                     )
                 }
             }
+            is AppStateCommand.PullToRoot -> {
+                updateState { currentData ->
+                    currentData.copy(
+                        navigationState = currentData.navigationState.pullToRoot(command.tab)
+                    )
+                }
+            }
         }
     }
 
@@ -61,6 +68,16 @@ internal class AppStateService(
             paths = paths + (selectedTab to currentPath.copy(
                 destinations = currentPath.destinations.dropLast(1)
             ))
+        )
+    }
+
+    private fun NavigationState.pullToRoot(
+        tab: com.taskbridge.core.models.navigation.AppTab
+    ): NavigationState {
+        val path = paths[tab] ?: return this
+        val root = path.root ?: return this
+        return copy(
+            paths = paths + (tab to path.copy(destinations = listOf(root)))
         )
     }
 }
