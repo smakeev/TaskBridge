@@ -132,5 +132,16 @@ A serializable version of `TaskTemplate`. Provides a `toDomain()` mapping functi
 ### TemplateTaskItemDto
 A serializable version of `TemplateTaskItem`. Provides a `toDomain()` mapping function.
 
-### TemplateTaskTypeDto
+### TemplateTypeDto
 A serializable enum for `TemplateTaskType`. Supports custom serial names for JSON compatibility.
+
+---
+
+## Network Managers (Internal)
+Internal components for handling network operations.
+
+### HttpJsonClient
+Low-level JSON GET client using Ktor. Performs raw network requests and deserialization.
+
+### JsonRequestManager
+Internal manager for deduplicating in-flight JSON requests by URL. It ensures that concurrent requests to the same URL share the same execution and automatically cleans up after completion. Does not cache completed results.
