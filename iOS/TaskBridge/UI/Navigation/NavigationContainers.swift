@@ -6,12 +6,13 @@ class NavigationViewModel: ObservableObject {
     @Published var currentDestination: NavigationDestination?
     private let repository: NavigationRepository
     private let rootType: Any.Type
+    private var observationTask: Task<Void, Never>?
     
     init(repository: NavigationRepository, rootType: Any.Type) {
         self.repository = repository
         self.rootType = rootType
         
-        Task {
+        observationTask = Task {
             for await path in repository.activePath {
                 // Only update if the path belongs to this tab's root
                 if let path = path, let root = path.root, type(of: root) == rootType {
@@ -20,6 +21,10 @@ class NavigationViewModel: ObservableObject {
                 // Else: ignore foreign paths to preserve last valid destination
             }
         }
+    }
+    
+    deinit {
+        observationTask?.cancel()
     }
 }
 
