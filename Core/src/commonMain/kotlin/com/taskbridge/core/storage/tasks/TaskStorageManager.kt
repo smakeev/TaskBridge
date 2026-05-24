@@ -1,6 +1,5 @@
 package com.taskbridge.core.storage.tasks
 
-import androidx.room.useWriterConnection
 import com.taskbridge.core.models.tasks.TaskId
 import com.taskbridge.core.models.tasks.TaskItem
 import kotlinx.coroutines.flow.Flow
@@ -8,7 +7,7 @@ import kotlinx.coroutines.flow.map
 
 /**
  * Task-specific storage manager that hides Room details from the rest of the Core.
- * Multi-row tree operations use transactions to ensure consistency.
+ * Ensures data consistency for multi-row operations by using DAO transactions.
  */
 internal class TaskStorageManager(
     private val database: TaskDatabase
@@ -33,30 +32,37 @@ internal class TaskStorageManager(
     }
 
     /**
-     * Saves a single root task and all its descendants in a transaction.
+     * Saves a single root task and replaces its entire subtree in a transaction.
      */
     suspend fun upsertTaskTree(rootTask: TaskItem) {
         upsertTaskTrees(listOf(rootTask))
     }
 
     /**
-     * Saves a list of root tasks and all their descendants in a transaction.
+     * Saves a list of root tasks and replaces their respective subtrees in a single transaction.
+     * Unrelated root tasks are preserved.
      */
     suspend fun upsertTaskTrees(rootTasks: List<TaskItem>) {
-        database.useWriterConnection {
-            val allEntities = rootTasks.flatMap { it.toEntities() }
-            taskDao.upsertTasks(allEntities)
+        val allEntities = taskDao.getAllTasks()
+        
+        // 1. Remove existing subtrees for provided roots to avoid orphans
+        val idsToDelete = rootTasks.flatMap { root ->
+            collectSubtreeIds(root.id.value, allEntities)
         }
+
+        // 2. Map new trees to entities
+        val newEntities = rootTasks.flatMap { it.toEntities() }
+
+        // 3. Perform atomic replacement via DAO transaction
+        taskDao.replaceSubtrees(idsToDelete, newEntities)
     }
 
     /**
-     * Replaces all tasks in the database with the provided task trees in a transaction.
+     * Replaces ALL tasks in the database with the provided task trees in a transaction.
      */
     suspend fun replaceAllTasks(rootTasks: List<TaskItem>) {
-        database.useWriterConnection {
-            val allEntities = rootTasks.flatMap { it.toEntities() }
-            taskDao.replaceAllTasks(allEntities)
-        }
+        val allEntities = rootTasks.flatMap { it.toEntities() }
+        taskDao.replaceAllTasks(allEntities)
     }
 
     /**
@@ -71,30 +77,31 @@ internal class TaskStorageManager(
      * Subtree deletion is explicit to avoid depending on SQLite cascade configuration behavior.
      */
     suspend fun deleteTaskTree(taskId: TaskId) {
-        database.useWriterConnection {
-            // 1. Load all entities to build lookup
-            val allEntities = taskDao.getAllTasks()
-            val groupedByParent = allEntities.groupBy { it.parentId }
-            
-            // 2. Recursively collect all descendant IDs
-            val idsToDelete = mutableListOf<String>()
-            
-            fun collectIds(id: String) {
-                idsToDelete.add(id)
-                groupedByParent[id]?.forEach { child ->
-                    collectIds(child.id)
-                }
-            }
-            
-            // Start collection if the target task exists
-            if (allEntities.any { it.id == taskId.value }) {
-                collectIds(taskId.value)
-            }
+        val allEntities = taskDao.getAllTasks()
+        val idsToDelete = collectSubtreeIds(taskId.value, allEntities).toList()
+        
+        if (idsToDelete.isNotEmpty()) {
+            taskDao.deleteTasksByIds(idsToDelete)
+        }
+    }
 
-            // 3. Delete all collected IDs in one transaction
-            if (idsToDelete.isNotEmpty()) {
-                taskDao.deleteTasksByIds(idsToDelete)
+    /**
+     * Recursively collects the ID of the root and all its descendants.
+     */
+    private fun collectSubtreeIds(rootId: String, allEntities: List<TaskEntity>): Set<String> {
+        val groupedByParent = allEntities.groupBy { it.parentId }
+        val result = mutableSetOf<String>()
+
+        fun collect(id: String) {
+            result.add(id)
+            groupedByParent[id]?.forEach { child ->
+                collect(child.id)
             }
         }
+
+        if (allEntities.any { it.id == rootId }) {
+            collect(rootId)
+        }
+        return result
     }
 }

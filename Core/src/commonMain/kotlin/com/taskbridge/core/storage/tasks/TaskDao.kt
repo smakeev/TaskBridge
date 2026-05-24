@@ -28,4 +28,12 @@ internal interface TaskDao {
         deleteAllTasks()
         upsertTasks(tasks)
     }
+
+    @Transaction
+    suspend fun replaceSubtrees(idsToDelete: List<String>, newEntities: List<TaskEntity>) {
+        if (idsToDelete.isNotEmpty()) {
+            deleteTasksByIds(idsToDelete)
+        }
+        upsertTasks(newEntities)
+    }
 }
