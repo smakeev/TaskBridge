@@ -91,6 +91,9 @@ Manages the application state, including navigation.
 ### NetworkService (Internal)
 Stateless service for network operations. Wraps `JsonRequestManager` and provide sequential handling for JSON loading requests. Does not cache results.
 
+### RemoteResourceService (Internal)
+Generic stateful service for managing remote resource state by URL. Orchestrates loading logic using provided lambdas and stores data, errors, and TTL metadata. Supports in-flight request deduplication and TTL-based caching.
+
 ### ServiceRequest
 A marker interface for requests that can be processed by stateless services.
 

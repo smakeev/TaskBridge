@@ -9,7 +9,7 @@ import kotlinx.coroutines.launch
 
 internal abstract class BaseStatefulService<C : ServiceCommand, D : ServiceData>(
     initialData: D,
-    scope: CoroutineScope
+    private val scope: CoroutineScope
 ) : StatefulService<C, D> {
 
     private val _data = MutableStateFlow(initialData)
@@ -20,7 +20,7 @@ internal abstract class BaseStatefulService<C : ServiceCommand, D : ServiceData>
     init {
         scope.launch {
             for (command in commandChannel) {
-                _data.value = handleCommand(_data.value, command)
+                handleCommand(command)
             }
         }
     }
@@ -29,5 +29,9 @@ internal abstract class BaseStatefulService<C : ServiceCommand, D : ServiceData>
         commandChannel.send(command)
     }
 
-    protected abstract suspend fun handleCommand(currentData: D, command: C): D
+    protected abstract suspend fun handleCommand(command: C)
+
+    protected fun updateState(reducer: (D) -> D) {
+        _data.value = reducer(_data.value)
+    }
 }

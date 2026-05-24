@@ -4,9 +4,11 @@ import com.taskbridge.core.network.HttpJsonClient
 import com.taskbridge.core.network.JsonRequestManager
 import com.taskbridge.core.services.appstate.AppStateService
 import com.taskbridge.core.services.network.NetworkService
+import com.taskbridge.core.services.remote.RemoteResourceService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.datetime.Clock
 
 /**
  * Locator for internal services.
@@ -31,7 +33,16 @@ internal class CoreServiceLocator {
         NetworkService(jsonRequestManagerInstance, scope)
     }
 
+    private val remoteResourceServiceInstance: RemoteResourceService by lazy {
+        RemoteResourceService(
+            scope = scope,
+            timeProvider = { Clock.System.now().toEpochMilliseconds() }
+        )
+    }
+
     fun appStateService(): AppStateService = appStateServiceInstance
 
     fun networkService(): NetworkService = networkServiceInstance
+
+    fun remoteResourceService(): RemoteResourceService = remoteResourceServiceInstance
 }

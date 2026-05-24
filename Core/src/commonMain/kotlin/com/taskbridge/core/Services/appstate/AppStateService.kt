@@ -11,15 +11,14 @@ internal class AppStateService(
     scope = scope
 ) {
 
-    override suspend fun handleCommand(
-        currentData: AppStateServiceData,
-        command: AppStateCommand
-    ): AppStateServiceData {
-        return when (command) {
+    override suspend fun handleCommand(command: AppStateCommand) {
+        when (command) {
             is AppStateCommand.SelectTab -> {
-                currentData.copy(
-                    navigationState = currentData.navigationState.selectTab(command.tab)
-                )
+                updateState { currentData ->
+                    currentData.copy(
+                        navigationState = currentData.navigationState.selectTab(command.tab)
+                    )
+                }
             }
         }
     }
