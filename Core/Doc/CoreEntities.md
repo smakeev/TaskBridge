@@ -5,6 +5,7 @@ This document describes the entities in the TaskBridge Core module.
 ## Core Entry Point
 ### TaskBridge
 The main entry point for the Core module. It provides access to public Interactors (e.g., `navigationInteractor()`). Internal Use Case access is hidden from the platform.
+- `TEMPLATES_URL`: Constant URL for fetching task templates.
 
 ---
 
@@ -86,3 +87,36 @@ Interface for services with reactive state and command processing.
 
 ### AppStateService (Internal)
 Manages the application state, including navigation.
+
+---
+
+## Data Models
+
+### Navigation
+#### AppTab
+Enum for primary navigation tabs (TASKS, TEMPLATES, REMINDERS).
+
+#### NavigationState
+Root navigation state model.
+
+#### NavigationDestination
+Sealed interface for navigation screens.
+
+#### NavigationPath
+Represents a navigation stack.
+
+#### NavigationOverlay
+Models temporary overlays (Alerts, Sheets, etc.).
+
+### Templates
+#### TemplateId
+A value class wrapping a `String` to represent a unique identifier for a template.
+
+#### TemplateTaskType
+An enum representing the possible types of tasks within a template (CHECKBOX, PROGRESS, CONTAINER).
+
+#### TemplateTaskItem
+A recursive data class representing a task item within a template. It can contain child tasks, forming a tree structure.
+
+#### TaskTemplate
+A data class representing a full task template, including its metadata and the root of its task tree.
