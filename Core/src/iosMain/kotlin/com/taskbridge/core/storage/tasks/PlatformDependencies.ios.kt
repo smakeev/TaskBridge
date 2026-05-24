@@ -13,14 +13,8 @@ public actual class PlatformDependencies
 @OptIn(ExperimentalForeignApi::class)
 internal actual fun getDatabaseBuilder(platformDependencies: PlatformDependencies): RoomDatabase.Builder<TaskDatabase> {
     val dbFilePath = documentDirectory() + "/task_bridge.db"
-    return Room.databaseBuilder<TaskDatabase>(
-        name = dbFilePath,
-        factory = { 
-            // TODO: Restore when KSP LEXICAL_SCOPE error on iOS targets is fixed
-            // TaskDatabase::class.instantiateImpl()
-            error("iOS Database not yet available due to KSP build issues")
-        }
-    ).setDriver(BundledSQLiteDriver())
+    return Room.databaseBuilder<TaskDatabase>(name = dbFilePath)
+        .setDriver(BundledSQLiteDriver())
 }
 
 @OptIn(ExperimentalForeignApi::class)

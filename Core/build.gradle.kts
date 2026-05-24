@@ -9,6 +9,16 @@ plugins {
 kotlin {
     jvmToolchain(17)
     androidTarget()
+
+    targets.all {
+        compilations.all {
+            compileTaskProvider.configure {
+                compilerOptions {
+                    freeCompilerArgs.add("-Xexpect-actual-classes")
+                }
+            }
+        }
+    }
     
     listOf(
         iosX64(),
@@ -48,12 +58,15 @@ room {
     schemaDirectory("$projectDir/schemas")
 }
 
+ksp {
+    arg("room.generateKotlin", "true")
+}
+
 dependencies {
     add("kspAndroid", libs.androidx.room.compiler)
-    // Temporarily disabled due to KSP LEXICAL_SCOPE error on iOS targets in this setup
-    // add("kspIosX64", libs.androidx.room.compiler)
-    // add("kspIosArm64", libs.androidx.room.compiler)
-    // add("kspIosSimulatorArm64", libs.androidx.room.compiler)
+    add("kspIosX64", libs.androidx.room.compiler)
+    add("kspIosArm64", libs.androidx.room.compiler)
+    add("kspIosSimulatorArm64", libs.androidx.room.compiler)
 }
 
 android {
