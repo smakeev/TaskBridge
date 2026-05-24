@@ -88,6 +88,9 @@ Interface for services with reactive state and command processing.
 ### AppStateService (Internal)
 Manages the application state, including navigation.
 
+### NetworkService (Internal)
+Stateless service for network operations. Wraps `JsonRequestManager` and provide sequential handling for JSON loading requests. Does not cache results.
+
 ### ServiceRequest
 A marker interface for requests that can be processed by stateless services.
 
