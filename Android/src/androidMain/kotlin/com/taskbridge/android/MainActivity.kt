@@ -16,8 +16,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.taskbridge.android.repository.NavigationRepository
 import com.taskbridge.android.repository.TaskTemplatesRepository
+import com.taskbridge.android.repository.TasksRepository
 import com.taskbridge.android.repository.impl.NavigationRepositoryImpl
 import com.taskbridge.android.repository.impl.TaskTemplatesRepositoryImpl
+import com.taskbridge.android.repository.impl.TasksRepositoryImpl
 import com.taskbridge.android.ui.navigation.RemindersNavigationScreen
 import com.taskbridge.android.ui.navigation.TasksNavigationScreen
 import com.taskbridge.android.ui.navigation.TemplatesNavigationScreen
@@ -32,11 +34,14 @@ class MainActivity : ComponentActivity() {
         
         val platformDependencies = PlatformDependencies(this)
         val taskBridge = TaskBridge(platformDependencies)
+        
         val navigationInteractor = taskBridge.navigationInteractor()
         val templatesInteractor = taskBridge.templatesInteractor()
+        val tasksInteractor = taskBridge.tasksInteractor()
         
         val navigationRepository: NavigationRepository = NavigationRepositoryImpl(navigationInteractor)
         val templatesRepository: TaskTemplatesRepository = TaskTemplatesRepositoryImpl(templatesInteractor)
+        val tasksRepository: TasksRepository = TasksRepositoryImpl(tasksInteractor)
 
         setContent {
             val scope = rememberCoroutineScope()
