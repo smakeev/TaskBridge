@@ -4,6 +4,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
+import io.ktor.http.ContentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
@@ -14,10 +15,13 @@ import kotlinx.serialization.json.Json
 internal class HttpJsonClient {
     private val httpClient = HttpClient {
         install(ContentNegotiation) {
-            json(Json {
+            val jsonConfig = Json {
                 ignoreUnknownKeys = true
                 isLenient = true
-            })
+            }
+            json(jsonConfig)
+            // GitHub Raw serves .json files as text/plain; register JSON for that too.
+            json(jsonConfig, ContentType.Text.Plain)
         }
     }
 
