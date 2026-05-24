@@ -2,6 +2,7 @@ import Foundation
 import TaskBridgeCore
 import Combine
 
+@MainActor
 protocol NavigationRepository {
     var activePath: AsyncStream<NavigationPath?> { get }
     var currentTab: AsyncStream<AppTab> { get }
