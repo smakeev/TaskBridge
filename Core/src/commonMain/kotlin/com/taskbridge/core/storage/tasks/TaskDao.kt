@@ -5,10 +5,10 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 internal interface TaskDao {
-    @Query("SELECT * FROM tasks")
+    @Query("SELECT * FROM tasks ORDER BY parentId, sortOrder")
     suspend fun getAllTasks(): List<TaskEntity>
 
-    @Query("SELECT * FROM tasks")
+    @Query("SELECT * FROM tasks ORDER BY parentId, sortOrder")
     fun observeAllTasks(): Flow<List<TaskEntity>>
 
     @Upsert
@@ -16,6 +16,9 @@ internal interface TaskDao {
 
     @Query("DELETE FROM tasks WHERE id = :id")
     suspend fun deleteTaskById(id: String)
+
+    @Query("DELETE FROM tasks WHERE id IN (:ids)")
+    suspend fun deleteTasksByIds(ids: List<String>)
 
     @Query("DELETE FROM tasks")
     suspend fun deleteAllTasks()

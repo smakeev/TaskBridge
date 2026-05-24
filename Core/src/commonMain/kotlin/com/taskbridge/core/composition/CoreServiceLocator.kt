@@ -48,7 +48,7 @@ internal class CoreServiceLocator(
     }
 
     private val taskStorageManagerInstance: TaskStorageManager by lazy {
-        TaskStorageManager(taskDatabaseInstance.taskDao())
+        TaskStorageManager(taskDatabaseInstance)
     }
 
     fun appStateService(): AppStateService = appStateServiceInstance

@@ -194,7 +194,7 @@ Room Data Access Object for task operations, including CRUD and reactive observa
 The main Room database class for the TaskBridge Core.
 
 ### TaskStorageManager
-A task-specific manager that encapsulates Room details and uses the `TaskEntityMapper` to bridge between flat entities and recursive domain trees.
+A task-specific manager that encapsulates Room details and uses the `TaskEntityMapper` to bridge between flat entities and recursive domain trees. It ensures data consistency for multi-row operations by using Room transactions. User-visible deletion recursively removes the entire task subtree to maintain data integrity independently of the underlying SQLite configuration.
 
 ### TaskEntityMapper
 Responsible for flattening the recursive `TaskItem` tree into a list of `TaskEntity` for storage and reconstructing the tree back into domain models for the application.
