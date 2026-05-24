@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 /**
  * Stateful service for managing reminders.
  * Synchronizes Core state with platform-specific [ReminderHandler] via event-driven updates.
+ * All state updates for the reminder list flow through the [ReminderEvent.RemindersUpdated] event.
  */
 internal class RemindersService(
     private val scope: CoroutineScope,
@@ -22,7 +23,7 @@ internal class RemindersService(
 ) {
 
     init {
-        // Subscribe to incoming reminder events from the platform
+        // Subscribe to incoming reminder events from the platform (or internal sync)
         scope.launch {
             reminderEvents.events().collect { event ->
                 when (event) {
@@ -37,13 +38,17 @@ internal class RemindersService(
             }
         }
 
-        // Perform initial synchronization
+        // Perform initial synchronization by emitting an event into the bus
         scope.launch {
             try {
                 val initialReminders = reminderHandler.getAllReminders()
-                updateState { it.copy(reminders = initialReminders) }
-            } catch (e: Exception) {
-                // Initial sync failure is not fatal but should be logged in production
+                reminderEvents.emit(ReminderEvent.RemindersUpdated(initialReminders))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                updateState { it.copy(
+                    errorMessage = e.message ?: e::class.simpleName ?: "Initial sync error"
+                ) }
             }
         }
     }
@@ -64,13 +69,14 @@ internal class RemindersService(
         updateState { it.copy(isLoading = true, errorMessage = null) }
         try {
             val reminders = reminderHandler.getAllReminders()
-            updateState { it.copy(reminders = reminders, isLoading = false, errorMessage = null) }
+            // Emit update event to maintain single state update path
+            reminderEvents.emit(ReminderEvent.RemindersUpdated(reminders))
         } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {
             updateState { it.copy(
                 isLoading = false,
-                errorMessage = e.message ?: e::class.simpleName ?: "Unknown error"
+                errorMessage = e.message ?: e::class.simpleName ?: "Load error"
             ) }
         }
     }
@@ -85,7 +91,7 @@ internal class RemindersService(
         } catch (e: Throwable) {
             updateState { it.copy(
                 isLoading = false,
-                errorMessage = e.message ?: e::class.simpleName ?: "Unknown error"
+                errorMessage = e.message ?: e::class.simpleName ?: "Action error"
             ) }
         }
     }
