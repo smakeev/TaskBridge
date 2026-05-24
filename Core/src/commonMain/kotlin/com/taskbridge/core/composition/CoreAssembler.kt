@@ -4,12 +4,14 @@ import com.taskbridge.core.events.CoreEventBuses
 import com.taskbridge.core.events.CoreEventEmitter
 import com.taskbridge.core.handlers.CorePlatformHandlers
 import com.taskbridge.core.interactors.navigation.NavigationInteractor
+import com.taskbridge.core.interactors.reminders.RemindersInteractor
 import com.taskbridge.core.interactors.tasks.TasksInteractor
 import com.taskbridge.core.interactors.templates.TemplatesInteractor
 import com.taskbridge.core.storage.tasks.PlatformDependencies
 import com.taskbridge.core.usecases.NavigationStateObserverUseCase
 import com.taskbridge.core.usecases.PushNavigationUseCase
 import com.taskbridge.core.usecases.SelectTabUseCase
+import com.taskbridge.core.usecases.reminders.RemindersUseCase
 import com.taskbridge.core.usecases.tasks.TasksUseCase
 import com.taskbridge.core.usecases.templates.TaskTemplatesUseCase
 
@@ -48,6 +50,12 @@ internal class CoreAssembler(
     fun tasksInteractor(): TasksInteractor {
         return TasksInteractor(
             useCase = useCases.get(this, TasksUseCase::class)
+        )
+    }
+
+    fun remindersInteractor(): RemindersInteractor {
+        return RemindersInteractor(
+            useCase = useCases.get(this, RemindersUseCase::class)
         )
     }
 }

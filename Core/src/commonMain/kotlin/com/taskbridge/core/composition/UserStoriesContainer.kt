@@ -1,6 +1,7 @@
 package com.taskbridge.core.composition
 
 import com.taskbridge.core.stories.*
+import com.taskbridge.core.stories.reminders.*
 import com.taskbridge.core.stories.remote.*
 import com.taskbridge.core.stories.tasks.*
 import kotlin.reflect.KClass
@@ -11,12 +12,6 @@ import kotlin.reflect.KClass
  */
 internal class UserStoriesContainer {
     fun selectTab(assembler: CoreAssembler): SelectTabStory = SelectTabStory(assembler)
-
-    fun pushDestination(assembler: CoreAssembler): PushDestinationStory = PushDestinationStory(assembler)
-
-    fun popDestination(assembler: CoreAssembler): PopDestinationStory = PopDestinationStory(assembler)
-
-    fun pullToRoot(assembler: CoreAssembler): PullToRootStory = PullToRootStory(assembler)
     
     fun getAppStateService(assembler: CoreAssembler): GetAppStateServiceStory = GetAppStateServiceStory(assembler)
 
@@ -41,4 +36,12 @@ internal class UserStoriesContainer {
     fun deleteTaskTree(assembler: CoreAssembler): DeleteTaskTreeStory = DeleteTaskTreeStory(assembler)
 
     fun observeTasks(assembler: CoreAssembler): ObserveTasksStory = ObserveTasksStory(assembler)
+
+    fun loadReminders(assembler: CoreAssembler): LoadRemindersStory = LoadRemindersStory(assembler)
+
+    fun scheduleReminder(assembler: CoreAssembler): ScheduleReminderStory = ScheduleReminderStory(assembler)
+
+    fun cancelReminder(assembler: CoreAssembler): CancelReminderStory = CancelReminderStory(assembler)
+
+    fun observeReminders(assembler: CoreAssembler): ObserveRemindersStory = ObserveRemindersStory(assembler)
 }

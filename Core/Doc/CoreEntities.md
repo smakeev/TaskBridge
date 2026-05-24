@@ -53,6 +53,13 @@ Public platform-facing interactor for managing tasks.
 - `replaceTask(task: TaskItem)`: Replaces an existing task's subtree.
 - `deleteTaskTree(taskId: TaskId)`: Recursively deletes a task and its descendants.
 
+### RemindersInteractor
+Public platform-facing interactor for managing reminders.
+- `remindersState`: `Flow<RemindersState>`
+- `loadReminders()`: Loads reminders from the platform handler.
+- `scheduleReminder(reminder)`: Schedules a new notification.
+- `cancelReminder(id)`: Cancels a scheduled notification.
+
 ---
 
 ## Composition
@@ -124,6 +131,23 @@ Provides a reactive `Flow` of the current `TasksServiceData`.
 
 ---
 
+## Reminders Stories (Internal)
+Internal atomic operations over the `RemindersService`.
+
+### LoadRemindersStory
+Triggers a fresh load of reminders from the platform via the `RemindersService`.
+
+### ScheduleReminderStory
+Orchestrates reminder scheduling.
+
+### CancelReminderStory
+Orchestrates reminder cancellation.
+
+### ObserveRemindersStory
+Provides a reactive `Flow` of the current `RemindersServiceData`.
+
+---
+
 ## Use Cases (Internal to Core)
 ### SelectTabUseCase
 Handles tab selection logic.
@@ -151,6 +175,13 @@ Internal use case for managing tasks. Orchestrates task stories to provide domai
 - `replaceTask(task: TaskItem)`: Triggers task replacement.
 - `deleteTaskTree(taskId: TaskId)`: Triggers task subtree deletion.
 - `observeTasks()`: Returns a `Flow<TasksServiceData>`.
+
+### RemindersUseCase
+Internal use case for managing reminders. Orchestrates reminder stories to provide domain-level operations.
+- `loadReminders()`: Triggers reminder loading from platform.
+- `scheduleReminder(reminder)`: Triggers reminder scheduling.
+- `cancelReminder(id)`: Triggers reminder cancellation.
+- `observeReminders()`: Returns a `Flow<RemindersServiceData>`.
 
 ---
 
@@ -253,6 +284,9 @@ The central reminder domain model. Reminders are standalone objects containing n
 #### ReminderEvent (Internal)
 A sealed interface representing incoming events from platform reminder handlers.
 - `RemindersUpdated(reminders: List<Reminder>)`: Emitted when the full list of reminders is replaced (e.g., on startup, after scheduling, or after cancellation).
+
+#### RemindersState
+Public state model for reminders, including the reminder list, loading status, and error messages.
 
 ---
 
