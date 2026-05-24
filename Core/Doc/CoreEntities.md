@@ -231,6 +231,10 @@ An enum representing the type of reminder: `START` (exact time) or `DEADLINE` (r
 #### Reminder
 The central reminder domain model. Reminders are standalone objects containing notification content and trigger timing. Platform-specific handlers will later be responsible for scheduling and canceling real notifications based on these models.
 
+#### ReminderEvent (Internal)
+A sealed interface representing incoming events from platform reminder handlers.
+- `RemindersUpdated(reminders: List<Reminder>)`: Emitted when the full list of reminders is replaced (e.g., on startup, after scheduling, or after cancellation).
+
 ---
 
 ## Storage (Internal)
