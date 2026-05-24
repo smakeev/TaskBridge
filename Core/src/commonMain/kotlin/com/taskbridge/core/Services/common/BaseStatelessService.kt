@@ -27,6 +27,8 @@ internal abstract class BaseStatelessService<R : ServiceRequest, T>(
                     try {
                         val result = handleRequest(envelope.request)
                         envelope.deferred.complete(result)
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Throwable) {
                         envelope.deferred.completeExceptionally(e)
                     }
