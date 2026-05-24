@@ -1,6 +1,7 @@
 package com.taskbridge.core.composition
 
 import com.taskbridge.core.stories.*
+import com.taskbridge.core.stories.remote.*
 import kotlin.reflect.KClass
 
 /**
@@ -17,4 +18,10 @@ internal class UserStoriesContainer {
     fun subscribeToActivePath(assembler: CoreAssembler): SubscribeToActivePathStory = SubscribeToActivePathStory(assembler)
 
     fun subscribeToOverlay(assembler: CoreAssembler): SubscribeToOverlayStory = SubscribeToOverlayStory(assembler)
+
+    fun loadRemoteResource(assembler: CoreAssembler): LoadRemoteResourceStory = LoadRemoteResourceStory(assembler)
+
+    fun forceLoadRemoteResource(assembler: CoreAssembler): ForceLoadRemoteResourceStory = ForceLoadRemoteResourceStory(assembler)
+
+    fun observeRemoteResource(assembler: CoreAssembler): ObserveRemoteResourceStory = ObserveRemoteResourceStory(assembler)
 }

@@ -59,6 +59,20 @@ Provides a `Flow<NavigationOverlay?>` derived from the navigation state.
 
 ---
 
+## Remote Resource Stories (Internal)
+Generic stories for managing remote resources by URL.
+
+### LoadRemoteResourceStory
+Loads a remote resource using a provided loader (delegating to `NetworkService`) and updates `RemoteResourceService`. Respects TTL.
+
+### ForceLoadRemoteResourceStory
+Same as `LoadRemoteResourceStory` but ignores TTL.
+
+### ObserveRemoteResourceStory
+Provides a `Flow<RemoteResourceEntry?>` for a specific URL, allowing observation of its loading status, data, and errors.
+
+---
+
 ## Use Cases (Internal to Core)
 ### SelectTabUseCase
 Handles tab selection logic.
