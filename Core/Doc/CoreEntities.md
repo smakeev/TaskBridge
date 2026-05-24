@@ -88,6 +88,15 @@ Interface for services with reactive state and command processing.
 ### AppStateService (Internal)
 Manages the application state, including navigation.
 
+### ServiceRequest
+A marker interface for requests that can be processed by stateless services.
+
+### StatelessService
+A generic interface for services that process requests and return results without maintaining long-living state.
+
+### BaseStatelessService
+An abstract base class for stateless services. It implements a sequential request processing loop using a mailbox pattern and provides deferred responses to callers.
+
 ---
 
 ## Data Models
