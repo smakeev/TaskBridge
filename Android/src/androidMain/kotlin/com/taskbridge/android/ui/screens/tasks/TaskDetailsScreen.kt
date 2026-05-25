@@ -17,6 +17,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -39,6 +40,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.taskbridge.android.repository.NavigationRepository
+import com.taskbridge.android.repository.RemindersRepository
 import com.taskbridge.android.repository.TasksRepository
 import com.taskbridge.android.ui.tasks.TasksViewModel
 import com.taskbridge.core.models.navigation.NavigationDestination
@@ -51,6 +53,7 @@ import kotlinx.coroutines.launch
 fun TaskDetailsScreen(
     taskId: String,
     tasksRepository: TasksRepository,
+    remindersRepository: RemindersRepository,
     navigationRepository: NavigationRepository,
     scope: CoroutineScope
 ) {
@@ -58,7 +61,7 @@ fun TaskDetailsScreen(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 @Suppress("UNCHECKED_CAST")
-                return TasksViewModel(tasksRepository) as T
+                return TasksViewModel(tasksRepository, remindersRepository, navigationRepository) as T
             }
         }
     )
@@ -66,6 +69,7 @@ fun TaskDetailsScreen(
     val task = state.findTask(com.taskbridge.core.models.tasks.TaskId(taskId))
     var showSubtaskDialog by remember { mutableStateOf(false) }
     var taskToRename by remember { mutableStateOf<TaskItem?>(null) }
+    var taskForReminder by remember { mutableStateOf<TaskItem?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.loadTasks()
@@ -130,6 +134,9 @@ fun TaskDetailsScreen(
                                     modifier = Modifier.padding(top = 4.dp)
                                 )
                             }
+                            IconButton(onClick = { taskForReminder = task }) {
+                                Icon(Icons.Default.Notifications, contentDescription = "Add reminder")
+                            }
                             IconButton(onClick = { taskToRename = task }) {
                                 Icon(Icons.Default.Edit, contentDescription = "Rename")
                             }
@@ -190,6 +197,7 @@ fun TaskDetailsScreen(
                                     },
                                     onToggleCheckbox = viewModel::toggleCheckbox,
                                     onProgressChanged = viewModel::updateProgress,
+                                    onAddReminder = { taskForReminder = it },
                                     onRename = { taskToRename = it },
                                     onDelete = { viewModel.deleteTaskTree(it.id) }
                                 )
@@ -223,6 +231,17 @@ fun TaskDetailsScreen(
             onSave = { title ->
                 viewModel.renameTask(renameTask, title)
                 taskToRename = null
+            }
+        )
+    }
+
+    taskForReminder?.let { reminderTask ->
+        TaskReminderDialog(
+            task = reminderTask,
+            onDismiss = { taskForReminder = null },
+            onSave = { title, body, type, minutesFromNow ->
+                viewModel.createReminder(reminderTask, title, body, type, minutesFromNow)
+                taskForReminder = null
             }
         )
     }

@@ -35,6 +35,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.taskbridge.android.repository.NavigationRepository
+import com.taskbridge.android.repository.RemindersRepository
 import com.taskbridge.android.repository.TasksRepository
 import com.taskbridge.android.ui.tasks.TasksViewModel
 import com.taskbridge.core.models.navigation.NavigationDestination
@@ -45,6 +46,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun TasksRootScreen(
     tasksRepository: TasksRepository,
+    remindersRepository: RemindersRepository,
     navigationRepository: NavigationRepository,
     scope: CoroutineScope
 ) {
@@ -52,13 +54,14 @@ fun TasksRootScreen(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 @Suppress("UNCHECKED_CAST")
-                return TasksViewModel(tasksRepository) as T
+                return TasksViewModel(tasksRepository, remindersRepository, navigationRepository) as T
             }
         }
     )
     val state by viewModel.state.collectAsState()
     var showCreateDialog by remember { mutableStateOf(false) }
     var taskToRename by remember { mutableStateOf<TaskItem?>(null) }
+    var taskForReminder by remember { mutableStateOf<TaskItem?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.loadTasks()
@@ -140,6 +143,7 @@ fun TasksRootScreen(
                     },
                     onToggleCheckbox = viewModel::toggleCheckbox,
                     onProgressChanged = viewModel::updateProgress,
+                    onAddReminder = { taskForReminder = it },
                     onRename = { taskToRename = it },
                     onDelete = { viewModel.deleteTaskTree(it.id) }
                 )
@@ -169,6 +173,17 @@ fun TasksRootScreen(
             onSave = { newTitle ->
                 viewModel.renameTask(task, newTitle)
                 taskToRename = null
+            }
+        )
+    }
+
+    taskForReminder?.let { task ->
+        TaskReminderDialog(
+            task = task,
+            onDismiss = { taskForReminder = null },
+            onSave = { title, body, type, minutesFromNow ->
+                viewModel.createReminder(task, title, body, type, minutesFromNow)
+                taskForReminder = null
             }
         )
     }

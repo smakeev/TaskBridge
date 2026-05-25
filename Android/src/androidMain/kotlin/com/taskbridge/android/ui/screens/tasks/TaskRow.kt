@@ -12,6 +12,7 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -36,6 +37,7 @@ fun TaskTreeRows(
     onOpenTask: (TaskItem) -> Unit,
     onToggleCheckbox: (TaskItem) -> Unit,
     onProgressChanged: (TaskItem, Int) -> Unit,
+    onAddReminder: (TaskItem) -> Unit,
     onRename: (TaskItem) -> Unit,
     onDelete: (TaskItem) -> Unit
 ) {
@@ -45,6 +47,7 @@ fun TaskTreeRows(
         onOpenTask = onOpenTask,
         onToggleCheckbox = onToggleCheckbox,
         onProgressChanged = onProgressChanged,
+        onAddReminder = onAddReminder,
         onRename = onRename,
         onDelete = onDelete
     )
@@ -57,6 +60,7 @@ fun TaskRow(
     onOpenTask: (TaskItem) -> Unit,
     onToggleCheckbox: (TaskItem) -> Unit,
     onProgressChanged: (TaskItem, Int) -> Unit,
+    onAddReminder: (TaskItem) -> Unit,
     onRename: (TaskItem) -> Unit,
     onDelete: (TaskItem) -> Unit
 ) {
@@ -114,6 +118,9 @@ fun TaskRow(
                         tint = if (task.isDone == true) Color(0xFF2E7D32) else MaterialTheme.colorScheme.outline
                     )
                 }
+            }
+            IconButton(onClick = { onAddReminder(task) }) {
+                Icon(Icons.Default.Notifications, contentDescription = "Add reminder")
             }
             IconButton(onClick = { onRename(task) }) {
                 Icon(Icons.Default.Edit, contentDescription = "Rename")

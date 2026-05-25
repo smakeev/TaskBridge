@@ -2,6 +2,7 @@ package com.taskbridge.android.ui.navigation
 
 import androidx.compose.runtime.*
 import com.taskbridge.android.repository.NavigationRepository
+import com.taskbridge.android.repository.RemindersRepository
 import com.taskbridge.android.repository.TaskTemplatesRepository
 import com.taskbridge.android.repository.TasksRepository
 import com.taskbridge.android.ui.screens.*
@@ -16,7 +17,8 @@ import kotlinx.coroutines.flow.map
 @Composable
 fun TasksNavigationScreen(
     navigationRepository: NavigationRepository,
-    tasksRepository: TasksRepository
+    tasksRepository: TasksRepository,
+    remindersRepository: RemindersRepository
 ) {
     val currentDestination by remember(navigationRepository) {
         navigationRepository.activePath
@@ -25,7 +27,7 @@ fun TasksNavigationScreen(
     }.collectAsState(initial = NavigationDestination.TasksRoot)
 
     val scope = rememberCoroutineScope()
-    DestinationMapper(currentDestination, null, tasksRepository, navigationRepository, scope)
+    DestinationMapper(currentDestination, null, tasksRepository, remindersRepository, navigationRepository, scope)
 }
 
 @Composable
@@ -41,19 +43,22 @@ fun TemplatesNavigationScreen(
     }.collectAsState(initial = NavigationDestination.TemplatesRoot)
 
     val scope = rememberCoroutineScope()
-    DestinationMapper(currentDestination, templatesRepository, tasksRepository, navigationRepository, scope)
+    DestinationMapper(currentDestination, templatesRepository, tasksRepository, null, navigationRepository, scope)
 }
 
 @Composable
-fun RemindersNavigationScreen(repository: NavigationRepository) {
-    val currentDestination by remember(repository) {
-        repository.activePath
+fun RemindersNavigationScreen(
+    navigationRepository: NavigationRepository,
+    remindersRepository: RemindersRepository
+) {
+    val currentDestination by remember(navigationRepository) {
+        navigationRepository.activePath
             .filter { path -> path?.root is NavigationDestination.RemindersRoot }
             .map { path -> path?.current }
     }.collectAsState(initial = NavigationDestination.RemindersRoot)
 
     val scope = rememberCoroutineScope()
-    DestinationMapper(currentDestination, null, null, repository, scope)
+    DestinationMapper(currentDestination, null, null, remindersRepository, navigationRepository, scope)
 }
 
 @Composable
@@ -61,13 +66,14 @@ private fun DestinationMapper(
     destination: NavigationDestination?,
     templatesRepository: TaskTemplatesRepository?,
     tasksRepository: TasksRepository?,
+    remindersRepository: RemindersRepository?,
     navigationRepository: NavigationRepository,
     scope: kotlinx.coroutines.CoroutineScope
 ) {
     when (destination) {
         is NavigationDestination.TasksRoot -> {
-            if (tasksRepository != null) {
-                TasksRootScreen(tasksRepository, navigationRepository, scope)
+            if (tasksRepository != null && remindersRepository != null) {
+                TasksRootScreen(tasksRepository, remindersRepository, navigationRepository, scope)
             }
         }
         is NavigationDestination.TemplatesRoot -> {
@@ -75,10 +81,14 @@ private fun DestinationMapper(
                 TemplatesRootScreen(templatesRepository, tasksRepository, navigationRepository)
             }
         }
-        is NavigationDestination.RemindersRoot -> RemindersRootScreen()
+        is NavigationDestination.RemindersRoot -> {
+            if (remindersRepository != null) {
+                RemindersRootScreen(remindersRepository)
+            }
+        }
         is NavigationDestination.TaskDetails -> {
-            if (tasksRepository != null) {
-                TaskDetailsScreen(destination.taskId, tasksRepository, navigationRepository, scope)
+            if (tasksRepository != null && remindersRepository != null) {
+                TaskDetailsScreen(destination.taskId, tasksRepository, remindersRepository, navigationRepository, scope)
             }
         }
         is NavigationDestination.CreateTask -> CreateTaskScreen(destination.parentTaskId)

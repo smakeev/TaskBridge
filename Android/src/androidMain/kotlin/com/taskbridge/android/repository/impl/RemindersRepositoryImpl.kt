@@ -25,6 +25,10 @@ class RemindersRepositoryImpl(
             initialValue = RemindersState()
         )
 
+    override suspend fun loadReminders() {
+        interactor.loadReminders()
+    }
+
     override suspend fun scheduleReminder(reminder: Reminder) {
         interactor.scheduleReminder(reminder)
     }

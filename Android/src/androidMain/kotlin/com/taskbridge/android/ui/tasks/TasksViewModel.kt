@@ -2,7 +2,13 @@ package com.taskbridge.android.ui.tasks
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.taskbridge.android.repository.NavigationRepository
+import com.taskbridge.android.repository.RemindersRepository
 import com.taskbridge.android.repository.TasksRepository
+import com.taskbridge.core.models.navigation.AppTab
+import com.taskbridge.core.models.reminders.Reminder
+import com.taskbridge.core.models.reminders.ReminderId
+import com.taskbridge.core.models.reminders.ReminderType
 import com.taskbridge.core.models.tasks.TaskId
 import com.taskbridge.core.models.tasks.TaskItem
 import com.taskbridge.core.models.tasks.TaskProgress
@@ -15,7 +21,9 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class TasksViewModel(
-    private val repository: TasksRepository
+    private val repository: TasksRepository,
+    private val remindersRepository: RemindersRepository,
+    private val navigationRepository: NavigationRepository
 ) : ViewModel() {
 
     val state: StateFlow<TasksState> = repository.tasksState
@@ -83,6 +91,30 @@ class TasksViewModel(
         viewModelScope.launch {
             runCatching {
                 repository.replaceTask(task.copy(title = trimmedTitle))
+            }
+        }
+    }
+
+    fun createReminder(task: TaskItem, title: String, body: String, type: ReminderType, minutesFromNow: Int) {
+        val trimmedTitle = title.trim()
+        if (trimmedTitle.isEmpty()) return
+
+        val now = System.currentTimeMillis()
+        val safeMinutes = minutesFromNow.coerceAtLeast(1)
+        val reminder = Reminder(
+            id = ReminderId(UUID.randomUUID().toString()),
+            title = trimmedTitle,
+            body = body.trim().ifBlank { "Reminder for ${task.title}" },
+            type = type,
+            triggerAtMillis = now + safeMinutes * 60_000L,
+            createdAtMillis = now
+        )
+
+        viewModelScope.launch {
+            runCatching {
+                remindersRepository.scheduleReminder(reminder)
+                navigationRepository.pullToRoot(AppTab.REMINDERS)
+                navigationRepository.selectTab(AppTab.REMINDERS)
             }
         }
     }

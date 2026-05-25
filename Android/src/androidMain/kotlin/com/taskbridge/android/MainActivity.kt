@@ -14,11 +14,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.lifecycle.lifecycleScope
 import com.taskbridge.android.handlers.reminders.AndroidReminderHandler
 import com.taskbridge.android.repository.NavigationRepository
+import com.taskbridge.android.repository.RemindersRepository
 import com.taskbridge.android.repository.TaskTemplatesRepository
 import com.taskbridge.android.repository.TasksRepository
 import com.taskbridge.android.repository.impl.NavigationRepositoryImpl
+import com.taskbridge.android.repository.impl.RemindersRepositoryImpl
 import com.taskbridge.android.repository.impl.TaskTemplatesRepositoryImpl
 import com.taskbridge.android.repository.impl.TasksRepositoryImpl
 import com.taskbridge.android.ui.navigation.RemindersNavigationScreen
@@ -43,10 +46,12 @@ class MainActivity : ComponentActivity() {
         val navigationInteractor = taskBridge.navigationInteractor()
         val templatesInteractor = taskBridge.templatesInteractor()
         val tasksInteractor = taskBridge.tasksInteractor()
+        val remindersInteractor = taskBridge.remindersInteractor()
         
         val navigationRepository: NavigationRepository = NavigationRepositoryImpl(navigationInteractor)
         val templatesRepository: TaskTemplatesRepository = TaskTemplatesRepositoryImpl(templatesInteractor)
         val tasksRepository: TasksRepository = TasksRepositoryImpl(tasksInteractor)
+        val remindersRepository: RemindersRepository = RemindersRepositoryImpl(remindersInteractor, lifecycleScope)
 
         setContent {
             val scope = rememberCoroutineScope()
@@ -83,7 +88,8 @@ class MainActivity : ComponentActivity() {
                         when (currentTab) {
                             AppTab.TASKS -> TasksNavigationScreen(
                                 navigationRepository = navigationRepository,
-                                tasksRepository = tasksRepository
+                                tasksRepository = tasksRepository,
+                                remindersRepository = remindersRepository
                             )
                             AppTab.TEMPLATES -> TemplatesNavigationScreen(
                                 navigationRepository = navigationRepository,
@@ -91,7 +97,8 @@ class MainActivity : ComponentActivity() {
                                 tasksRepository = tasksRepository
                             )
                             AppTab.REMINDERS -> RemindersNavigationScreen(
-                                repository = navigationRepository
+                                navigationRepository = navigationRepository,
+                                remindersRepository = remindersRepository
                             )
                         }
                     }

@@ -3,33 +3,43 @@ import TaskBridgeCore
 
 struct TaskDetailsView: View {
     let taskId: String
-    
+
     @StateObject private var viewModel: TasksViewModel
     private let navigationRepository: NavigationRepository
-    
+
     @State private var isShowingSubtaskSheet = false
     @State private var taskToRename: TaskItem?
-    
-    init(taskId: String, tasksRepository: TasksRepository, navigationRepository: NavigationRepository) {
+    @State private var taskForReminder: TaskItem?
+
+    init(
+        taskId: String,
+        tasksRepository: TasksRepository,
+        remindersRepository: RemindersRepository,
+        navigationRepository: NavigationRepository
+    ) {
         self.taskId = taskId
-        _viewModel = StateObject(wrappedValue: TasksViewModel(repository: tasksRepository))
+        _viewModel = StateObject(wrappedValue: TasksViewModel(
+            repository: tasksRepository,
+            remindersRepository: remindersRepository,
+            navigationRepository: navigationRepository
+        ))
         self.navigationRepository = navigationRepository
     }
-    
+
     var body: some View {
         let task = viewModel.state.findTask(id: TaskId(value: taskId))
-        
+
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 12) {
                 header
-                
+
                 if viewModel.state.isLoading && task == nil {
                     ProgressView()
                         .frame(maxWidth: .infinity)
                         .padding(.top, 48)
                 } else if let task {
                     detailsCard(task)
-                    
+
                     if task.type == .container {
                         Button {
                             isShowingSubtaskSheet = true
@@ -38,7 +48,7 @@ struct TaskDetailsView: View {
                         }
                         .buttonStyle(.borderedProminent)
                         .padding(.top, 4)
-                        
+
                         if task.children.isEmpty {
                             Text("No subtasks yet")
                                 .font(.subheadline)
@@ -52,6 +62,7 @@ struct TaskDetailsView: View {
                                     onOpen: openTaskDetails,
                                     onToggleCheckbox: viewModel.toggleCheckbox,
                                     onProgressChanged: viewModel.updateProgress,
+                                    onAddReminder: { taskForReminder = $0 },
                                     onRename: { taskToRename = $0 },
                                     onDelete: { viewModel.deleteTaskTree(taskId: $0.id) }
                                 )
@@ -89,8 +100,25 @@ struct TaskDetailsView: View {
                 }
             }
         }
+        .sheet(isPresented: Binding(
+            get: { taskForReminder != nil },
+            set: { if !$0 { taskForReminder = nil } }
+        )) {
+            if let task = taskForReminder {
+                TaskReminderSheet(task: task) { title, body, type, minutesFromNow in
+                    viewModel.createReminder(
+                        task: task,
+                        title: title,
+                        body: body,
+                        type: type,
+                        minutesFromNow: minutesFromNow
+                    )
+                    taskForReminder = nil
+                }
+            }
+        }
     }
-    
+
     private var header: some View {
         HStack(spacing: 12) {
             Button {
@@ -102,13 +130,13 @@ struct TaskDetailsView: View {
                     .font(.headline)
             }
             .buttonStyle(.plain)
-            
+
             Text("Task Details")
                 .font(.title2.weight(.bold))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
-    
+
     private func detailsCard(_ task: TaskItem) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top) {
@@ -121,12 +149,19 @@ struct TaskDetailsView: View {
                 }
                 Spacer()
                 Button {
+                    taskForReminder = task
+                } label: {
+                    Image(systemName: "bell.badge")
+                }
+                .buttonStyle(.plain)
+
+                Button {
                     taskToRename = task
                 } label: {
                     Image(systemName: "pencil")
                 }
                 .buttonStyle(.plain)
-                
+
                 Button(role: .destructive) {
                     viewModel.deleteTaskTree(taskId: task.id)
                     Task {
@@ -137,14 +172,14 @@ struct TaskDetailsView: View {
                 }
                 .buttonStyle(.plain)
             }
-            
+
             if task.type == .checkbox {
                 Toggle("Completed", isOn: Binding(
                     get: { task.isChecked },
                     set: { _ in viewModel.toggleCheckbox(task: task) }
                 ))
             }
-            
+
             if task.type == .progress {
                 TaskProgressSlider(
                     task: task,
@@ -155,7 +190,7 @@ struct TaskDetailsView: View {
         .padding(16)
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
-    
+
     private func openTaskDetails(_ task: TaskItem) {
         Task {
             try? await navigationRepository.pushDestination(NavigationDestinationTaskDetails(taskId: task.taskIdValue))

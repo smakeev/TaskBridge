@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 interface RemindersRepository {
     val remindersState: StateFlow<RemindersState>
     
+    suspend fun loadReminders()
     suspend fun scheduleReminder(reminder: Reminder)
     suspend fun cancelReminder(reminderId: ReminderId)
 }

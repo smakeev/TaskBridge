@@ -32,10 +32,16 @@ struct TasksNavigationView: View {
     @StateObject private var viewModel: NavigationViewModel
     private let navigationRepository: NavigationRepository
     private let tasksRepository: TasksRepository
+    private let remindersRepository: RemindersRepository
     
-    init(navigationRepository: NavigationRepository, tasksRepository: TasksRepository) {
+    init(
+        navigationRepository: NavigationRepository,
+        tasksRepository: TasksRepository,
+        remindersRepository: RemindersRepository
+    ) {
         self.navigationRepository = navigationRepository
         self.tasksRepository = tasksRepository
+        self.remindersRepository = remindersRepository
         _viewModel = StateObject(wrappedValue: NavigationViewModel(
             repository: navigationRepository,
             rootType: NavigationDestinationTasksRoot.self
@@ -47,7 +53,8 @@ struct TasksNavigationView: View {
             destination: viewModel.currentDestination,
             navigationRepository: navigationRepository,
             templatesRepository: nil,
-            tasksRepository: tasksRepository
+            tasksRepository: tasksRepository,
+            remindersRepository: remindersRepository
         )
     }
 }
@@ -77,7 +84,8 @@ struct TemplatesNavigationView: View {
             destination: viewModel.currentDestination,
             navigationRepository: navigationRepository,
             templatesRepository: templatesRepository,
-            tasksRepository: tasksRepository
+            tasksRepository: tasksRepository,
+            remindersRepository: nil
         )
     }
 }
@@ -85,11 +93,13 @@ struct TemplatesNavigationView: View {
 struct RemindersNavigationView: View {
     @StateObject private var viewModel: NavigationViewModel
     private let navigationRepository: NavigationRepository
+    private let remindersRepository: RemindersRepository
     
-    init(repository: NavigationRepository) {
-        self.navigationRepository = repository
+    init(navigationRepository: NavigationRepository, remindersRepository: RemindersRepository) {
+        self.navigationRepository = navigationRepository
+        self.remindersRepository = remindersRepository
         _viewModel = StateObject(wrappedValue: NavigationViewModel(
-            repository: repository,
+            repository: navigationRepository,
             rootType: NavigationDestinationRemindersRoot.self
         ))
     }
@@ -99,7 +109,8 @@ struct RemindersNavigationView: View {
             destination: viewModel.currentDestination,
             navigationRepository: navigationRepository,
             templatesRepository: nil,
-            tasksRepository: nil
+            tasksRepository: nil,
+            remindersRepository: remindersRepository
         )
     }
 }
@@ -109,14 +120,19 @@ struct DestinationMapper: View {
     let navigationRepository: NavigationRepository
     let templatesRepository: TaskTemplatesRepository?
     let tasksRepository: TasksRepository?
+    let remindersRepository: RemindersRepository?
     
     var body: some View {
         Group {
             if let destination = destination {
                 switch destination {
                 case is NavigationDestinationTasksRoot:
-                    if let tasksRepository {
-                        TasksRootView(tasksRepository: tasksRepository, navigationRepository: navigationRepository)
+                    if let tasksRepository, let remindersRepository {
+                        TasksRootView(
+                            tasksRepository: tasksRepository,
+                            remindersRepository: remindersRepository,
+                            navigationRepository: navigationRepository
+                        )
                     }
                 case is NavigationDestinationTemplatesRoot: 
                     if let repository = templatesRepository, let tasksRepository {
@@ -126,12 +142,16 @@ struct DestinationMapper: View {
                             navigationRepository: navigationRepository
                         )
                     }
-                case is NavigationDestinationRemindersRoot: RemindersRootView()
+                case is NavigationDestinationRemindersRoot:
+                    if let remindersRepository {
+                        RemindersRootView(repository: remindersRepository)
+                    }
                 case let details as NavigationDestinationTaskDetails:
-                    if let tasksRepository {
+                    if let tasksRepository, let remindersRepository {
                         TaskDetailsView(
                             taskId: details.taskId,
                             tasksRepository: tasksRepository,
+                            remindersRepository: remindersRepository,
                             navigationRepository: navigationRepository
                         )
                     }

@@ -7,9 +7,10 @@ struct TaskTreeRowsView: View {
     let onOpen: (TaskItem) -> Void
     let onToggleCheckbox: (TaskItem) -> Void
     let onProgressChanged: (TaskItem, Int) -> Void
+    let onAddReminder: (TaskItem) -> Void
     let onRename: (TaskItem) -> Void
     let onDelete: (TaskItem) -> Void
-    
+
     var body: some View {
         TaskRowView(
             task: task,
@@ -17,6 +18,7 @@ struct TaskTreeRowsView: View {
             onOpen: onOpen,
             onToggleCheckbox: onToggleCheckbox,
             onProgressChanged: onProgressChanged,
+            onAddReminder: onAddReminder,
             onRename: onRename,
             onDelete: onDelete
         )
@@ -29,26 +31,27 @@ struct TaskRowView: View {
     let onOpen: (TaskItem) -> Void
     let onToggleCheckbox: (TaskItem) -> Void
     let onProgressChanged: (TaskItem, Int) -> Void
+    let onAddReminder: (TaskItem) -> Void
     let onRename: (TaskItem) -> Void
     let onDelete: (TaskItem) -> Void
-    
+
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
             Image(systemName: iconName)
                 .font(.title3)
                 .foregroundColor(iconColor)
                 .frame(width: 24)
-            
+
             VStack(alignment: .leading, spacing: 4) {
                 Text(task.title)
                     .font(.subheadline.weight(depth == 0 ? .semibold : .regular))
                     .foregroundColor(.primary)
                     .lineLimit(2)
-                
+
                 Text(taskStatus(task))
                     .font(.caption)
                     .foregroundColor(.secondary)
-                
+
                 if task.type == .progress {
                     TaskProgressSlider(
                         task: task,
@@ -57,7 +60,7 @@ struct TaskRowView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            
+
             if task.type == .checkbox {
                 Button {
                     onToggleCheckbox(task)
@@ -67,7 +70,15 @@ struct TaskRowView: View {
                 .buttonStyle(.plain)
                 .foregroundColor(task.isChecked ? .green : .secondary)
             }
-            
+
+            Button {
+                onAddReminder(task)
+            } label: {
+                Image(systemName: "bell.badge")
+            }
+            .buttonStyle(.plain)
+            .foregroundColor(.secondary)
+
             Button {
                 onRename(task)
             } label: {
@@ -75,7 +86,7 @@ struct TaskRowView: View {
             }
             .buttonStyle(.plain)
             .foregroundColor(.secondary)
-            
+
             Button(role: .destructive) {
                 onDelete(task)
             } label: {
@@ -95,7 +106,7 @@ struct TaskRowView: View {
             onOpen(task)
         }
     }
-    
+
     private var iconName: String {
         switch task.type {
         case .checkbox:
@@ -108,7 +119,7 @@ struct TaskRowView: View {
             return "circle"
         }
     }
-    
+
     private var iconColor: Color {
         switch task.type {
         case .checkbox:

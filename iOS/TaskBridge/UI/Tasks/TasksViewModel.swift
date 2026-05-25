@@ -6,11 +6,19 @@ final class TasksViewModel: ObservableObject {
     @Published var state = TasksState(tasks: [], isLoading: false, errorMessage: nil)
     
     private let repository: TasksRepository
+    private let remindersRepository: RemindersRepository
+    private let navigationRepository: NavigationRepository
     private var observationTask: Task<Void, Never>?
     private var hasLoaded = false
     
-    init(repository: TasksRepository) {
+    init(
+        repository: TasksRepository,
+        remindersRepository: RemindersRepository,
+        navigationRepository: NavigationRepository
+    ) {
         self.repository = repository
+        self.remindersRepository = remindersRepository
+        self.navigationRepository = navigationRepository
         observationTask = Task {
             for await newState in repository.tasksState {
                 self.state = newState
@@ -92,6 +100,29 @@ final class TasksViewModel: ObservableObject {
         )
         Task {
             try? await repository.replaceTask(updatedTask)
+        }
+    }
+
+    func createReminder(task: TaskItem, title: String, body: String, type: ReminderType, minutesFromNow: Int) {
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedTitle.isEmpty else { return }
+
+        let now = Date()
+        let safeMinutes = max(minutesFromNow, 1)
+        let trimmedBody = body.trimmingCharacters(in: .whitespacesAndNewlines)
+        let reminder = Reminder(
+            id: ReminderId(value: UUID().uuidString),
+            title: trimmedTitle,
+            body: trimmedBody.isEmpty ? "Reminder for \(task.title)" : trimmedBody,
+            type: type,
+            triggerAtMillis: Int64(now.addingTimeInterval(TimeInterval(safeMinutes * 60)).timeIntervalSince1970 * 1000),
+            createdAtMillis: Int64(now.timeIntervalSince1970 * 1000)
+        )
+
+        Task {
+            try? await remindersRepository.scheduleReminder(reminder)
+            try? await navigationRepository.pullToRoot(tab: .reminders)
+            try? await navigationRepository.selectTab(tab: .reminders)
         }
     }
     

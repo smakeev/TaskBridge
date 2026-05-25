@@ -5,13 +5,21 @@ struct ContentView: View {
     @Environment(\.navigationRepository) private var navigationRepository
     @Environment(\.taskTemplatesRepository) private var templatesRepository
     @Environment(\.tasksRepository) private var tasksRepository
+    @Environment(\.remindersRepository) private var remindersRepository
     @State private var selectedTab: AppTab = .tasks
     
     var body: some View {
         Group {
-            if let navRepo = navigationRepository, let templatesRepo = templatesRepository, let tasksRepo = tasksRepository {
+            if let navRepo = navigationRepository,
+               let templatesRepo = templatesRepository,
+               let tasksRepo = tasksRepository,
+               let remindersRepo = remindersRepository {
                 TabView(selection: $selectedTab) {
-                    TasksNavigationView(navigationRepository: navRepo, tasksRepository: tasksRepo)
+                    TasksNavigationView(
+                        navigationRepository: navRepo,
+                        tasksRepository: tasksRepo,
+                        remindersRepository: remindersRepo
+                    )
                         .tabItem {
                             Image(systemName: getSFSymbol(for: AppTab.tasks.iconKey))
                         }
@@ -27,7 +35,10 @@ struct ContentView: View {
                         }
                         .tag(AppTab.templates)
                     
-                    RemindersNavigationView(repository: navRepo)
+                    RemindersNavigationView(
+                        navigationRepository: navRepo,
+                        remindersRepository: remindersRepo
+                    )
                         .tabItem {
                             Image(systemName: getSFSymbol(for: AppTab.reminders.iconKey))
                         }

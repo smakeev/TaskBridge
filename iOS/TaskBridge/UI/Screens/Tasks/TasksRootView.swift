@@ -7,9 +7,18 @@ struct TasksRootView: View {
 
     @State private var isShowingCreateSheet = false
     @State private var taskToRename: TaskItem?
+    @State private var taskForReminder: TaskItem?
 
-    init(tasksRepository: TasksRepository, navigationRepository: NavigationRepository) {
-        _viewModel = StateObject(wrappedValue: TasksViewModel(repository: tasksRepository))
+    init(
+        tasksRepository: TasksRepository,
+        remindersRepository: RemindersRepository,
+        navigationRepository: NavigationRepository
+    ) {
+        _viewModel = StateObject(wrappedValue: TasksViewModel(
+            repository: tasksRepository,
+            remindersRepository: remindersRepository,
+            navigationRepository: navigationRepository
+        ))
         self.navigationRepository = navigationRepository
     }
 
@@ -44,6 +53,7 @@ struct TasksRootView: View {
                         onOpen: openTaskDetails,
                         onToggleCheckbox: viewModel.toggleCheckbox,
                         onProgressChanged: viewModel.updateProgress,
+                        onAddReminder: { taskForReminder = $0 },
                         onRename: { taskToRename = $0 },
                         onDelete: { viewModel.deleteTaskTree(taskId: $0.id) }
                     )
@@ -81,6 +91,23 @@ struct TasksRootView: View {
                 TaskRenameSheet(task: task) { title in
                     viewModel.renameTask(task: task, newTitle: title)
                     taskToRename = nil
+                }
+            }
+        }
+        .sheet(isPresented: Binding(
+            get: { taskForReminder != nil },
+            set: { if !$0 { taskForReminder = nil } }
+        )) {
+            if let task = taskForReminder {
+                TaskReminderSheet(task: task) { title, body, type, minutesFromNow in
+                    viewModel.createReminder(
+                        task: task,
+                        title: title,
+                        body: body,
+                        type: type,
+                        minutesFromNow: minutesFromNow
+                    )
+                    taskForReminder = nil
                 }
             }
         }
