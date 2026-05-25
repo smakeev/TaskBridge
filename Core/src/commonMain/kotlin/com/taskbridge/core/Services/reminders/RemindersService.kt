@@ -28,6 +28,7 @@ internal class RemindersService(
             reminderEvents.events().collect { event ->
                 when (event) {
                     is ReminderEvent.RemindersUpdated -> {
+                        println("[TaskBridge][Core][RemindersService] event RemindersUpdated count=${event.reminders.size}")
                         updateState { it.copy(
                             reminders = event.reminders,
                             isLoading = false,
@@ -42,6 +43,7 @@ internal class RemindersService(
         scope.launch {
             try {
                 val initialReminders = reminderHandler.getAllReminders()
+                println("[TaskBridge][Core][RemindersService] initial sync count=${initialReminders.size}")
                 reminderEvents.emit(ReminderEvent.RemindersUpdated(initialReminders))
             } catch (e: CancellationException) {
                 throw e
@@ -66,9 +68,11 @@ internal class RemindersService(
     }
 
     private suspend fun performLoad() {
+        println("[TaskBridge][Core][RemindersService] load reminders")
         updateState { it.copy(isLoading = true, errorMessage = null) }
         try {
             val reminders = reminderHandler.getAllReminders()
+            println("[TaskBridge][Core][RemindersService] load result count=${reminders.size}")
             // Emit update event to maintain single state update path
             reminderEvents.emit(ReminderEvent.RemindersUpdated(reminders))
         } catch (e: CancellationException) {
@@ -82,6 +86,7 @@ internal class RemindersService(
     }
 
     private suspend fun performAction(action: suspend () -> Unit) {
+        println("[TaskBridge][Core][RemindersService] perform action")
         updateState { it.copy(isLoading = true, errorMessage = null) }
         try {
             action()

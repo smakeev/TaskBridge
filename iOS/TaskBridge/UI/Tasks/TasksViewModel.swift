@@ -120,9 +120,14 @@ final class TasksViewModel: ObservableObject {
         )
 
         Task {
-            try? await remindersRepository.scheduleReminder(reminder)
-            try? await navigationRepository.pullToRoot(tab: .reminders)
-            try? await navigationRepository.selectTab(tab: .reminders)
+            do {
+                try await remindersRepository.scheduleReminder(reminder)
+                print("[TaskBridge][iOS][TasksViewModel] reminder scheduled id=\(reminder.id.value)")
+                try? await navigationRepository.pullToRoot(tab: .reminders)
+                try? await navigationRepository.selectTab(tab: .reminders)
+            } catch {
+                print("[TaskBridge][iOS][TasksViewModel] reminder schedule failed error=\(error)")
+            }
         }
     }
     

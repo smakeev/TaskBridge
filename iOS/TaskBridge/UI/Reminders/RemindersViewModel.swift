@@ -26,13 +26,23 @@ final class RemindersViewModel: ObservableObject {
         guard !hasLoaded else { return }
         hasLoaded = true
         Task {
-            try? await repository.loadReminders()
+            do {
+                try await repository.loadReminders()
+                print("[TaskBridge][iOS][RemindersViewModel] load requested")
+            } catch {
+                print("[TaskBridge][iOS][RemindersViewModel] load failed error=\(error)")
+            }
         }
     }
     
     func cancelReminder(_ reminder: Reminder) {
         Task {
-            try? await repository.cancelReminder(reminder.id)
+            do {
+                try await repository.cancelReminder(reminder.id)
+                print("[TaskBridge][iOS][RemindersViewModel] cancel requested id=\(reminder.id.value)")
+            } catch {
+                print("[TaskBridge][iOS][RemindersViewModel] cancel failed error=\(error)")
+            }
         }
     }
 }
