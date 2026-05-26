@@ -1,0 +1,753 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TaskBridge Architecture</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f7f4ee;
+      --surface: #fffdf8;
+      --surface-strong: #ffffff;
+      --text: #202124;
+      --muted: #62615d;
+      --line: #ddd4c5;
+      --accent: #246b61;
+      --accent-strong: #174c45;
+      --code: #f0e8db;
+      --shadow: 0 18px 50px rgba(40, 34, 22, 0.11);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #151816;
+        --surface: #1f2420;
+        --surface-strong: #252b27;
+        --text: #f2f0e9;
+        --muted: #b7b2a6;
+        --line: #3a413b;
+        --accent: #79c8b9;
+        --accent-strong: #a0ded3;
+        --code: #2c332d;
+        --shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(160deg, rgba(36, 107, 97, 0.16), transparent 36rem),
+        var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.6;
+    }
+
+    .shell {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 40px 0 56px;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: start;
+      padding: 32px 0 24px;
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      color: var(--accent-strong);
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2.15rem, 5vw, 4.25rem);
+      line-height: 1.04;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      max-width: 720px;
+      margin: 18px 0 0;
+      color: var(--muted);
+      font-size: 1.08rem;
+    }
+
+    .controls {
+      display: inline-flex;
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--surface) 86%, transparent);
+      box-shadow: var(--shadow);
+    }
+
+    button {
+      min-width: 58px;
+      border: 0;
+      border-radius: 999px;
+      padding: 9px 14px;
+      background: transparent;
+      color: var(--muted);
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button[aria-pressed="true"] {
+      background: var(--accent);
+      color: white;
+    }
+
+    .panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 280px;
+      gap: 28px;
+      align-items: start;
+    }
+
+    main,
+    aside {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--surface) 92%, transparent);
+      box-shadow: var(--shadow);
+    }
+
+    main {
+      padding: clamp(22px, 4vw, 42px);
+    }
+
+    aside {
+      position: sticky;
+      top: 18px;
+      padding: 18px;
+    }
+
+    aside h2 {
+      margin: 0 0 10px;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+
+    .toc {
+      display: grid;
+      gap: 6px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .toc a {
+      display: block;
+      border-radius: 6px;
+      padding: 7px 8px;
+      color: var(--text);
+      text-decoration: none;
+      font-size: 0.94rem;
+    }
+
+    .toc a:hover,
+    .toc a:focus {
+      background: var(--code);
+      outline: none;
+    }
+
+    article h1,
+    article h2,
+    article h3 {
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    article h1 {
+      margin: 0 0 22px;
+      font-size: clamp(2rem, 4vw, 3rem);
+    }
+
+    article h2 {
+      margin: 38px 0 12px;
+      padding-top: 4px;
+      font-size: 1.45rem;
+    }
+
+    article h3 {
+      margin: 26px 0 8px;
+      font-size: 1.08rem;
+    }
+
+    article p {
+      margin: 0 0 16px;
+    }
+
+    article ul {
+      padding-left: 1.25rem;
+    }
+
+    article li {
+      margin: 6px 0;
+    }
+
+    code {
+      border-radius: 5px;
+      padding: 0.13em 0.34em;
+      background: var(--code);
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: 0.92em;
+    }
+
+    pre {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+      background: var(--code);
+    }
+
+    pre code {
+      padding: 0;
+      background: transparent;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 18px 0 24px;
+      overflow: hidden;
+      border-radius: 8px;
+      background: var(--surface-strong);
+    }
+
+    th,
+    td {
+      border: 1px solid var(--line);
+      padding: 11px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--code);
+    }
+
+    .source-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 20px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .source-links a {
+      color: var(--accent-strong);
+    }
+
+    @media (max-width: 860px) {
+      header,
+      .panel {
+        grid-template-columns: 1fr;
+      }
+
+      .controls {
+        width: max-content;
+      }
+
+      aside {
+        position: static;
+        order: -1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div>
+        <p class="eyebrow">smakeev/TaskBridge</p>
+        <h1>TaskBridge Architecture</h1>
+        <p class="subtitle" id="subtitle">Shared Kotlin business logic with native Android and iOS presentation layers.</p>
+      </div>
+      <nav class="controls" aria-label="Language selector">
+        <button type="button" data-lang="en" aria-pressed="true">EN</button>
+        <button type="button" data-lang="ru" aria-pressed="false">RU</button>
+      </nav>
+    </header>
+
+    <div class="panel">
+      <main>
+        <article id="content" aria-live="polite"></article>
+        <div class="source-links" id="source-links"></div>
+      </main>
+      <aside aria-label="Table of contents">
+        <h2 id="toc-title">Contents</h2>
+        <ul class="toc" id="toc"></ul>
+      </aside>
+    </div>
+  </div>
+
+  <script type="text/markdown" id="md-en">
+# TaskBridge Architecture
+
+TaskBridge is a Kotlin Multiplatform sample app that keeps business logic in a shared Core module and presents it through thin native Android and iOS applications. The project demonstrates shared domain models, reactive state, platform capability handlers, and platform-specific UI layers.
+
+## Modules
+
+| Module | Responsibility |
+| --- | --- |
+| `Core` | Shared Kotlin Multiplatform logic: models, services, use cases, stories, interactors, storage, networking, and event buses. |
+| `Android` | Native Android app built with Jetpack Compose. It adapts Core interactors into Android repositories and renders screens. |
+| `iOS` | Native SwiftUI app. It adapts Core interactors into Swift repositories and exposes Core flows as Swift async streams. |
+| `Platform_Handlers` | Platform-facing handler module for capabilities that Core cannot implement directly on every platform. |
+| `docs` | Static documentation and mock API data, including task template JSON used by the templates flow. |
+
+## High-Level Flow
+
+```text
+Android Compose UI / SwiftUI
+        |
+Platform repositories
+        |
+Core interactors
+        |
+Use cases
+        |
+Stories
+        |
+Stateful and stateless services
+        |
+Storage, network clients, platform handlers, event buses
+```
+
+The UI does not talk to storage, networking, or platform notification APIs directly. It works through repositories, and repositories delegate to Core interactors.
+
+## Core Entry Point
+
+`TaskBridge` is the public entry point into shared logic. Platform apps create it with:
+
+- `PlatformDependencies`, used for platform-specific infrastructure such as database creation.
+- `CorePlatformHandlers`, used for capabilities that need native implementations, such as reminders.
+
+After creation, platform code obtains interactors from `TaskBridge`:
+
+- `navigationInteractor()`
+- `templatesInteractor()`
+- `tasksInteractor()`
+- `remindersInteractor()`
+
+The entry point also exposes `eventEmitter`, which lets platform handlers notify Core about platform-side changes.
+
+## Composition
+
+`CoreAssembler` is the internal composition root. It owns:
+
+- `CoreServiceLocator`, which lazily creates and keeps services.
+- `UseCaseContainer`, which resolves public-to-Core use cases.
+- `UserStoriesContainer`, which creates smaller internal story operations.
+- `CoreEventBuses` and `CoreEventEmitter`, which connect platform events back into shared logic.
+
+This keeps construction details inside Core while exposing a compact interactor API to Android and iOS.
+
+## Core Layers
+
+### Interactors
+
+Interactors are the stable platform-facing facade. They expose flows and suspend functions that platform repositories can call without knowing how Core is assembled internally.
+
+### Use Cases
+
+Use cases coordinate domain operations and translate service data into platform-friendly state models. Examples include navigation state observation, task operations, template loading, and reminder management.
+
+### Stories
+
+Stories are small internal operations. They wrap focused actions such as loading tasks, replacing a task subtree, selecting a tab, loading a remote resource, or scheduling a reminder.
+
+### Services
+
+Services own long-lived state or process requests:
+
+- Stateful services use reactive state and command processing.
+- Stateless services process requests through a mailbox-style sequential loop.
+- `AppStateService` owns navigation state.
+- `TasksService` owns task tree state and persists changes through `TaskStorageManager`.
+- `RemindersService` synchronizes Core reminder state with platform reminder handlers.
+- `NetworkService` performs JSON network requests.
+- `RemoteResourceService` stores remote resource state, loading errors, timestamps, TTL metadata, and in-flight request information.
+
+## Data and Capabilities
+
+Tasks are stored locally through a shared Room database abstraction in Core. Platform-specific database builders are supplied through `PlatformDependencies`.
+
+Task templates are loaded from JSON through the shared network layer. The current template URL points at `docs/mock-api/templates.json` in the GitHub repository, and Core applies a TTL before reloading it.
+
+Reminders are platform capabilities. Core defines the shared reminder model and orchestration, while Android and iOS provide native reminder handlers. Platform handlers report updates back to Core through `CoreEventEmitter`.
+
+## Platform Layers
+
+### Android
+
+The Android app initializes `TaskBridge` in `MainActivity`, creates Android repository implementations around Core interactors, and renders screens with Jetpack Compose. Compose screens observe Kotlin flows and call repository methods for user actions.
+
+### iOS
+
+The iOS app initializes `TaskBridge` in `TaskBridgeApp`, creates Swift repository implementations around Core interactors, injects them through SwiftUI environment values, and converts Core flows into `AsyncStream` values for SwiftUI view models.
+
+## Design Intent
+
+The architecture keeps domain decisions in shared Kotlin code while allowing each platform to keep a native UI and native integrations. Core owns the rules, state transitions, storage orchestration, network loading, and event coordination. Android and iOS stay focused on presentation, lifecycle, and platform APIs.
+  </script>
+
+  <script type="text/markdown" id="md-ru">
+# Архитектура TaskBridge
+
+TaskBridge - пример Kotlin Multiplatform приложения, где бизнес-логика находится в общем модуле Core, а Android и iOS остаются тонкими нативными оболочками. Проект показывает общие доменные модели, реактивное состояние, платформенные обработчики возможностей и нативные UI-слои.
+
+## Модули
+
+| Модуль | Ответственность |
+| --- | --- |
+| `Core` | Общая Kotlin Multiplatform логика: модели, сервисы, use cases, stories, interactors, storage, network и event buses. |
+| `Android` | Нативное Android-приложение на Jetpack Compose. Адаптирует Core interactors в Android repositories и отображает экраны. |
+| `iOS` | Нативное SwiftUI-приложение. Адаптирует Core interactors в Swift repositories и превращает Core flows в Swift async streams. |
+| `Platform_Handlers` | Платформенный модуль для возможностей, которые Core не может реализовать одинаково на всех платформах. |
+| `docs` | Статическая документация и mock API данные, включая JSON шаблонов задач. |
+
+## Общий поток
+
+```text
+Android Compose UI / SwiftUI
+        |
+Platform repositories
+        |
+Core interactors
+        |
+Use cases
+        |
+Stories
+        |
+Stateful and stateless services
+        |
+Storage, network clients, platform handlers, event buses
+```
+
+UI не обращается напрямую к storage, network или платформенным notification API. Он работает через repositories, а repositories делегируют операции Core interactors.
+
+## Точка входа Core
+
+`TaskBridge` - публичная точка входа в общую логику. Платформенные приложения создают ее с:
+
+- `PlatformDependencies`, которые дают Core доступ к платформенной инфраструктуре, например к созданию базы данных.
+- `CorePlatformHandlers`, которые дают Core доступ к возможностям с нативной реализацией, например к reminders.
+
+После создания платформенный код получает interactors из `TaskBridge`:
+
+- `navigationInteractor()`
+- `templatesInteractor()`
+- `tasksInteractor()`
+- `remindersInteractor()`
+
+Точка входа также предоставляет `eventEmitter`, через который платформенные handlers сообщают Core об изменениях на стороне платформы.
+
+## Композиция
+
+`CoreAssembler` - внутренний composition root. Он владеет:
+
+- `CoreServiceLocator`, который лениво создает и хранит сервисы.
+- `UseCaseContainer`, который резолвит public-to-Core use cases.
+- `UserStoriesContainer`, который создает небольшие внутренние story operations.
+- `CoreEventBuses` и `CoreEventEmitter`, которые возвращают платформенные события обратно в общую логику.
+
+Так детали сборки остаются внутри Core, а Android и iOS получают компактный interactor API.
+
+## Слои Core
+
+### Interactors
+
+Interactors - стабильный фасад для платформ. Они предоставляют flows и suspend functions, которые repositories могут вызывать без знания внутренней сборки Core.
+
+### Use cases
+
+Use cases координируют доменные операции и переводят данные сервисов в state models, удобные для платформ. Примеры: наблюдение за navigation state, операции с задачами, загрузка templates и управление reminders.
+
+### Stories
+
+Stories - небольшие внутренние операции. Они инкапсулируют конкретные действия: загрузить задачи, заменить поддерево задачи, выбрать tab, загрузить remote resource или запланировать reminder.
+
+### Services
+
+Services владеют долгоживущим состоянием или обрабатывают запросы:
+
+- Stateful services используют реактивное состояние и обработку команд.
+- Stateless services обрабатывают requests через последовательный mailbox loop.
+- `AppStateService` владеет navigation state.
+- `TasksService` владеет деревом задач и сохраняет изменения через `TaskStorageManager`.
+- `RemindersService` синхронизирует reminder state Core с платформенными reminder handlers.
+- `NetworkService` выполняет JSON network requests.
+- `RemoteResourceService` хранит состояние remote resources, ошибки загрузки, timestamps, TTL metadata и информацию о запросах в процессе.
+
+## Данные и платформенные возможности
+
+Задачи сохраняются локально через общий Room database abstraction в Core. Платформенные database builders передаются через `PlatformDependencies`.
+
+Шаблоны задач загружаются из JSON через общий network layer. Текущий template URL указывает на `docs/mock-api/templates.json` в GitHub repository, а Core применяет TTL перед повторной загрузкой.
+
+Reminders - платформенная возможность. Core определяет общую модель reminders и orchestration, а Android и iOS предоставляют нативные reminder handlers. Handlers отправляют обновления обратно в Core через `CoreEventEmitter`.
+
+## Платформенные слои
+
+### Android
+
+Android-приложение инициализирует `TaskBridge` в `MainActivity`, создает Android repository implementations вокруг Core interactors и отображает экраны на Jetpack Compose. Compose screens наблюдают Kotlin flows и вызывают repository methods для пользовательских действий.
+
+### iOS
+
+iOS-приложение инициализирует `TaskBridge` в `TaskBridgeApp`, создает Swift repository implementations вокруг Core interactors, внедряет их через SwiftUI environment values и превращает Core flows в `AsyncStream` values для SwiftUI view models.
+
+## Замысел архитектуры
+
+Архитектура оставляет доменные решения в общем Kotlin-коде, но позволяет каждой платформе иметь нативный UI и нативные integrations. Core владеет правилами, state transitions, storage orchestration, network loading и event coordination. Android и iOS фокусируются на presentation, lifecycle и platform APIs.
+  </script>
+
+  <script>
+    const config = {
+      en: {
+        file: "architecture.en.md",
+        fallbackId: "md-en",
+        subtitle: "Shared Kotlin business logic with native Android and iOS presentation layers.",
+        contents: "Contents",
+        source: "Markdown source",
+        repo: "Repository"
+      },
+      ru: {
+        file: "architecture.ru.md",
+        fallbackId: "md-ru",
+        subtitle: "Общая бизнес-логика Kotlin с нативными слоями представления для Android и iOS.",
+        contents: "Содержание",
+        source: "Markdown источник",
+        repo: "Репозиторий"
+      }
+    };
+
+    function readStoredLanguage() {
+      try {
+        return localStorage.getItem("taskbridge-docs-lang");
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function storeLanguage(lang) {
+      try {
+        localStorage.setItem("taskbridge-docs-lang", lang);
+      } catch (_) {
+        // Some browsers restrict storage for local files; language switching still works for this page view.
+      }
+    }
+
+    const state = {
+      lang: new URLSearchParams(location.search).get("lang") || readStoredLanguage() || "en"
+    };
+
+    const contentEl = document.querySelector("#content");
+    const tocEl = document.querySelector("#toc");
+    const tocTitleEl = document.querySelector("#toc-title");
+    const subtitleEl = document.querySelector("#subtitle");
+    const sourceLinksEl = document.querySelector("#source-links");
+    const buttons = [...document.querySelectorAll("[data-lang]")];
+
+    function escapeHtml(value) {
+      return value
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    function inlineMarkdown(value) {
+      return escapeHtml(value)
+        .replace(/`([^`]+)`/g, "<code>$1</code>")
+        .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+    }
+
+    function slugify(value) {
+      return value
+        .toLowerCase()
+        .trim()
+        .replace(/[`'"]/g, "")
+        .replace(/[^\p{L}\p{N}]+/gu, "-")
+        .replace(/^-+|-+$/g, "");
+    }
+
+    function renderTable(lines) {
+      const rows = lines
+        .filter((line, index) => index !== 1)
+        .map(line => line.trim().slice(1, -1).split("|").map(cell => inlineMarkdown(cell.trim())));
+      const [head, ...body] = rows;
+      return [
+        "<table>",
+        "<thead><tr>" + head.map(cell => `<th>${cell}</th>`).join("") + "</tr></thead>",
+        "<tbody>" + body.map(row => "<tr>" + row.map(cell => `<td>${cell}</td>`).join("") + "</tr>").join("") + "</tbody>",
+        "</table>"
+      ].join("");
+    }
+
+    function renderMarkdown(markdown) {
+      const lines = markdown.replace(/\r\n/g, "\n").trim().split("\n");
+      const html = [];
+      let paragraph = [];
+      let list = [];
+      let code = [];
+      let inCode = false;
+      let table = [];
+
+      function flushParagraph() {
+        if (paragraph.length) {
+          html.push(`<p>${inlineMarkdown(paragraph.join(" "))}</p>`);
+          paragraph = [];
+        }
+      }
+
+      function flushList() {
+        if (list.length) {
+          html.push("<ul>" + list.map(item => `<li>${inlineMarkdown(item)}</li>`).join("") + "</ul>");
+          list = [];
+        }
+      }
+
+      function flushTable() {
+        if (table.length) {
+          html.push(renderTable(table));
+          table = [];
+        }
+      }
+
+      for (const line of lines) {
+        if (line.startsWith("```")) {
+          flushParagraph();
+          flushList();
+          flushTable();
+          if (inCode) {
+            html.push(`<pre><code>${escapeHtml(code.join("\n"))}</code></pre>`);
+            code = [];
+            inCode = false;
+          } else {
+            inCode = true;
+          }
+          continue;
+        }
+
+        if (inCode) {
+          code.push(line);
+          continue;
+        }
+
+        if (/^\|.*\|$/.test(line)) {
+          flushParagraph();
+          flushList();
+          table.push(line);
+          continue;
+        }
+
+        flushTable();
+
+        const heading = line.match(/^(#{1,3})\s+(.+)$/);
+        if (heading) {
+          flushParagraph();
+          flushList();
+          const level = heading[1].length;
+          const text = heading[2].trim();
+          const id = slugify(text);
+          html.push(`<h${level} id="${id}">${inlineMarkdown(text)}</h${level}>`);
+          continue;
+        }
+
+        const bullet = line.match(/^-\s+(.+)$/);
+        if (bullet) {
+          flushParagraph();
+          list.push(bullet[1]);
+          continue;
+        }
+
+        if (!line.trim()) {
+          flushParagraph();
+          flushList();
+          continue;
+        }
+
+        paragraph.push(line.trim());
+      }
+
+      flushParagraph();
+      flushList();
+      flushTable();
+      return html.join("\n");
+    }
+
+    async function loadMarkdown(lang) {
+      const current = config[lang];
+      try {
+        if (location.protocol !== "file:") {
+          const response = await fetch(current.file, { cache: "no-store" });
+          if (response.ok) {
+            return await response.text();
+          }
+        }
+      } catch (_) {
+        // Local file access often blocks fetch; the embedded copy keeps the page portable.
+      }
+      return document.querySelector(`#${current.fallbackId}`).textContent;
+    }
+
+    function renderToc() {
+      const headings = [...contentEl.querySelectorAll("h2, h3")];
+      tocEl.innerHTML = headings.map(heading => {
+        const indent = heading.tagName === "H3" ? " style=\"padding-left: 20px\"" : "";
+        return `<li><a${indent} href="#${heading.id}">${heading.textContent}</a></li>`;
+      }).join("");
+    }
+
+    async function setLanguage(lang) {
+      state.lang = config[lang] ? lang : "en";
+      storeLanguage(state.lang);
+      document.documentElement.lang = state.lang;
+
+      buttons.forEach(button => {
+        button.setAttribute("aria-pressed", String(button.dataset.lang === state.lang));
+      });
+
+      const current = config[state.lang];
+      subtitleEl.textContent = current.subtitle;
+      tocTitleEl.textContent = current.contents;
+      contentEl.innerHTML = renderMarkdown(await loadMarkdown(state.lang));
+      sourceLinksEl.innerHTML = [
+        `<a href="${current.file}">${current.source}</a>`,
+        `<a href="https://github.com/smakeev/TaskBridge">GitHub ${current.repo}</a>`
+      ].join(" / ");
+      renderToc();
+    }
+
+    buttons.forEach(button => {
+      button.addEventListener("click", () => setLanguage(button.dataset.lang));
+    });
+
+    setLanguage(state.lang);
+  </script>
+</body>
+</html>
