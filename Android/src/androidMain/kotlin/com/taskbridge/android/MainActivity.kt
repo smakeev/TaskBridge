@@ -16,10 +16,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.lifecycleScope
 import com.taskbridge.android.handlers.reminders.AndroidReminderHandler
+import com.taskbridge.android.repository.MessagesRepository
 import com.taskbridge.android.repository.NavigationRepository
 import com.taskbridge.android.repository.RemindersRepository
 import com.taskbridge.android.repository.TaskTemplatesRepository
 import com.taskbridge.android.repository.TasksRepository
+import com.taskbridge.android.repository.impl.MessagesRepositoryImpl
 import com.taskbridge.android.repository.impl.NavigationRepositoryImpl
 import com.taskbridge.android.repository.impl.RemindersRepositoryImpl
 import com.taskbridge.android.repository.impl.TaskTemplatesRepositoryImpl
@@ -29,6 +31,8 @@ import com.taskbridge.android.ui.navigation.TasksNavigationScreen
 import com.taskbridge.android.ui.navigation.TemplatesNavigationScreen
 import com.taskbridge.core.TaskBridge
 import com.taskbridge.core.handlers.CorePlatformHandlers
+import com.taskbridge.core.models.messages.AppMessage
+import com.taskbridge.core.models.messages.AppMessageTypes
 import com.taskbridge.core.models.navigation.AppTab
 import com.taskbridge.core.storage.tasks.PlatformDependencies
 import kotlinx.coroutines.launch
@@ -47,18 +51,32 @@ class MainActivity : ComponentActivity() {
         val templatesInteractor = taskBridge.templatesInteractor()
         val tasksInteractor = taskBridge.tasksInteractor()
         val remindersInteractor = taskBridge.remindersInteractor()
+        val messagesInteractor = taskBridge.messagesInteractor()
         
         val navigationRepository: NavigationRepository = NavigationRepositoryImpl(navigationInteractor)
         val templatesRepository: TaskTemplatesRepository = TaskTemplatesRepositoryImpl(templatesInteractor)
         val tasksRepository: TasksRepository = TasksRepositoryImpl(tasksInteractor)
         val remindersRepository: RemindersRepository = RemindersRepositoryImpl(remindersInteractor, lifecycleScope)
+        val messagesRepository: MessagesRepository = MessagesRepositoryImpl(messagesInteractor)
 
         setContent {
             val scope = rememberCoroutineScope()
+            val snackbarHostState = remember { SnackbarHostState() }
             val currentTab by navigationRepository.currentTab.collectAsState(initial = AppTab.TASKS)
+
+            LaunchedEffect(messagesRepository, snackbarHostState) {
+                messagesRepository.observe(AppMessageTypes.reminderCreated).collect { message ->
+                    when (message) {
+                        is AppMessage.ReminderCreated -> snackbarHostState.showSnackbar(message.text)
+                    }
+                }
+            }
 
             MaterialTheme {
                 Scaffold(
+                    snackbarHost = {
+                        SnackbarHost(hostState = snackbarHostState)
+                    },
                     bottomBar = {
                         NavigationBar {
                             AppTab.entries.forEach { tab ->

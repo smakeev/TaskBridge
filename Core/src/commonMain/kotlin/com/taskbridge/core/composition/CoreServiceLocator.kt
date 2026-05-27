@@ -3,14 +3,17 @@ package com.taskbridge.core.composition
 import com.taskbridge.core.events.common.CoreEventBus
 import com.taskbridge.core.events.reminders.ReminderEvent
 import com.taskbridge.core.handlers.reminders.ReminderHandler
+import com.taskbridge.core.messages.MessageCenter
 import com.taskbridge.core.network.HttpJsonClient
 import com.taskbridge.core.network.JsonRequestManager
 import com.taskbridge.core.services.appstate.AppStateService
+import com.taskbridge.core.services.messages.MessagesService
 import com.taskbridge.core.services.network.NetworkService
 import com.taskbridge.core.services.remote.RemoteResourceService
 import com.taskbridge.core.services.reminders.RemindersService
 import com.taskbridge.core.services.tasks.TasksService
 import com.taskbridge.core.storage.tasks.*
+import com.taskbridge.core.stories.messages.PublishMessageStory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -29,6 +32,17 @@ internal class CoreServiceLocator(
 
     private val appStateServiceInstance: AppStateService by lazy {
         AppStateService(scope)
+    }
+
+    private val messageCenterInstance: MessageCenter by lazy {
+        MessageCenter()
+    }
+
+    private val messagesServiceInstance: MessagesService by lazy {
+        MessagesService(
+            messageCenter = messageCenterInstance,
+            scope = scope
+        )
     }
 
     private val httpJsonClientInstance: HttpJsonClient by lazy {
@@ -69,11 +83,14 @@ internal class CoreServiceLocator(
         RemindersService(
             scope = scope,
             reminderHandler = reminderHandler,
-            reminderEvents = reminderEvents
+            reminderEvents = reminderEvents,
+            publishMessageStory = PublishMessageStory(messagesServiceInstance)
         )
     }
 
     fun appStateService(): AppStateService = appStateServiceInstance
+
+    fun messagesService(): MessagesService = messagesServiceInstance
 
     fun networkService(): NetworkService = networkServiceInstance
 

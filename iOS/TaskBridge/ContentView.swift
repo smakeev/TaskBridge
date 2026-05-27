@@ -6,14 +6,17 @@ struct ContentView: View {
     @Environment(\.taskTemplatesRepository) private var templatesRepository
     @Environment(\.tasksRepository) private var tasksRepository
     @Environment(\.remindersRepository) private var remindersRepository
+    @Environment(\.messagesRepository) private var messagesRepository
     @State private var selectedTab: AppTab = .tasks
+    @StateObject private var toastPresenter = ToastPresenter()
     
     var body: some View {
         Group {
             if let navRepo = navigationRepository,
                let templatesRepo = templatesRepository,
                let tasksRepo = tasksRepository,
-               let remindersRepo = remindersRepository {
+               let remindersRepo = remindersRepository,
+               let messagesRepo = messagesRepository {
                 TabView(selection: $selectedTab) {
                     TasksNavigationView(
                         navigationRepository: navRepo,
@@ -44,19 +47,25 @@ struct ContentView: View {
                         }
                         .tag(AppTab.reminders)
                 }
-                .onChange(of: selectedTab) { newTab in
-                    Task {
-                        try? await navRepo.selectTab(tab: newTab)
-                    }
-                }
-                .task {
-                    // Observe tab changes from Core
-                    for await tab in navRepo.currentTab {
-                        if selectedTab != tab {
-                            selectedTab = tab
+                    .toastOverlay(text: toastPresenter.text)
+                    .onChange(of: selectedTab) { newTab in
+                        Task {
+                            try? await navRepo.selectTab(tab: newTab)
                         }
                     }
-                }
+                    .task {
+                        // Observe tab changes from Core.
+                        for await tab in navRepo.currentTab {
+                            if selectedTab != tab {
+                                selectedTab = tab
+                            }
+                        }
+                    }
+                    .task {
+                        for await message in messagesRepo.observe(type: AppMessageTypes.shared.reminderCreated) {
+                            showToast(for: message)
+                        }
+                    }
             } else {
                 ProgressView("Initializing...")
             }
@@ -70,5 +79,13 @@ struct ContentView: View {
         case "notifications": return "bell"
         default: return "questionmark"
         }
+    }
+
+    private func showToast(for message: AppMessage) {
+        guard let reminderCreated = message as? AppMessageReminderCreated else {
+            return
+        }
+
+        toastPresenter.show(reminderCreated.text)
     }
 }

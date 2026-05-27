@@ -17,6 +17,10 @@ struct RemindersRepositoryKey: EnvironmentKey {
     @MainActor static var defaultValue: RemindersRepository? = nil
 }
 
+struct MessagesRepositoryKey: EnvironmentKey {
+    @MainActor static var defaultValue: MessagesRepository? = nil
+}
+
 extension EnvironmentValues {
     var navigationRepository: NavigationRepository? {
         get { self[NavigationRepositoryKey.self] }
@@ -37,6 +41,11 @@ extension EnvironmentValues {
         get { self[RemindersRepositoryKey.self] }
         set { self[RemindersRepositoryKey.self] = newValue }
     }
+
+    var messagesRepository: MessagesRepository? {
+        get { self[MessagesRepositoryKey.self] }
+        set { self[MessagesRepositoryKey.self] = newValue }
+    }
 }
 
 @main
@@ -46,6 +55,7 @@ struct TaskBridgeApp: App {
     private let taskTemplatesRepository: TaskTemplatesRepository
     private let tasksRepository: TasksRepository
     private let remindersRepository: RemindersRepository
+    private let messagesRepository: MessagesRepository
 
     init() {
         let platformDependencies = PlatformDependencies()
@@ -65,6 +75,9 @@ struct TaskBridgeApp: App {
 
         let remindersInteractor = taskBridge.remindersInteractor()
         self.remindersRepository = RemindersRepositoryImpl(interactor: remindersInteractor)
+
+        let messagesInteractor = taskBridge.messagesInteractor()
+        self.messagesRepository = MessagesRepositoryImpl(interactor: messagesInteractor)
     }
 
     var body: some Scene {
@@ -74,6 +87,7 @@ struct TaskBridgeApp: App {
                 .environment(\.taskTemplatesRepository, taskTemplatesRepository)
                 .environment(\.tasksRepository, tasksRepository)
                 .environment(\.remindersRepository, remindersRepository)
+                .environment(\.messagesRepository, messagesRepository)
         }
     }
 }

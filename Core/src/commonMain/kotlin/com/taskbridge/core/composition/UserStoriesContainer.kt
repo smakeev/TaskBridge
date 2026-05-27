@@ -1,10 +1,10 @@
 package com.taskbridge.core.composition
 
 import com.taskbridge.core.stories.*
+import com.taskbridge.core.stories.messages.*
 import com.taskbridge.core.stories.reminders.*
 import com.taskbridge.core.stories.remote.*
 import com.taskbridge.core.stories.tasks.*
-import kotlin.reflect.KClass
 
 /**
  * Container for internal user stories.
@@ -50,4 +50,10 @@ internal class UserStoriesContainer {
     fun cancelReminder(assembler: CoreAssembler): CancelReminderStory = CancelReminderStory(assembler)
 
     fun observeReminders(assembler: CoreAssembler): ObserveRemindersStory = ObserveRemindersStory(assembler)
+
+    fun publishMessage(assembler: CoreAssembler): PublishMessageStory =
+        PublishMessageStory(assembler.services.messagesService())
+
+    fun observeMessages(assembler: CoreAssembler): ObserveMessagesStory =
+        ObserveMessagesStory(assembler.services.messagesService())
 }

@@ -3,6 +3,7 @@ package com.taskbridge.core
 import com.taskbridge.core.composition.CoreAssembler
 import com.taskbridge.core.events.CoreEventEmitter
 import com.taskbridge.core.handlers.CorePlatformHandlers
+import com.taskbridge.core.interactors.messages.MessagesInteractor
 import com.taskbridge.core.interactors.navigation.NavigationInteractor
 import com.taskbridge.core.interactors.reminders.RemindersInteractor
 import com.taskbridge.core.interactors.tasks.TasksInteractor
@@ -67,6 +68,13 @@ public class TaskBridge(
      */
     public fun remindersInteractor(): RemindersInteractor {
         return assembler.remindersInteractor()
+    }
+
+    /**
+     * Provides access to one-shot platform messages.
+     */
+    public fun messagesInteractor(): MessagesInteractor {
+        return assembler.messagesInteractor()
     }
 
     /**

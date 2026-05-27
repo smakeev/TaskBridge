@@ -60,6 +60,13 @@ Public platform-facing interactor for managing reminders.
 - `scheduleReminder(reminder)`: Schedules a new notification.
 - `cancelReminder(id)`: Cancels a scheduled notification.
 
+### MessagesInteractor
+Public platform-facing interactor for one-shot messages.
+- `observe(type: KClass<out AppMessage>)`: Returns a `Flow<AppMessage>` for the requested message type.
+- `publish(message)`: Reserved for future platform-to-Core messages. Currently fails with `AppMessageError.UnsupportedCoreMessage`.
+
+The interactor is the only layer that maps internal `CoreMessage` payloads to public `AppMessage` values. It uses a mapper registry keyed by concrete `AppMessage` type, requests the matching Core subscription from `MessagesUseCase`, and returns only that message stream. Platform-to-Core publish support is guarded by an interactor-owned set of supported `AppMessage` types. Reminder-created text is currently hardcoded here, but it should later use a `LocalizationHandler` to return localized platform-ready text.
+
 ---
 
 ## Composition
@@ -148,6 +155,17 @@ Provides a reactive `Flow` of the current `RemindersServiceData`.
 
 ---
 
+## Message Stories (Internal)
+Internal one-shot message stories over the message pipeline.
+
+### PublishMessageStory
+Publishes an internal `CoreMessage` through `MessagesService`.
+
+### ObserveMessagesStory
+Subscribes to `MessagesService.messages()` and exposes the one-shot internal `CoreMessage` stream.
+
+---
+
 ## Use Cases (Internal to Core)
 ### SelectTabUseCase
 Handles tab selection logic.
@@ -183,6 +201,9 @@ Internal use case for managing reminders. Orchestrates reminder stories to provi
 - `cancelReminder(id)`: Triggers reminder cancellation.
 - `observeReminders()`: Returns a `Flow<RemindersServiceData>`.
 
+### MessagesUseCase
+Internal common message use case. It can publish internal `CoreMessage` values and observe a requested internal message type by filtering the stream from `ObserveMessagesStory`. It does not know about public `AppMessage` models.
+
 ---
 
 ## Services
@@ -203,6 +224,20 @@ Stateful service that owns the task tree state. It persists changes through `Tas
 
 ### RemindersService (Internal)
 Stateful, event-driven service for managing reminders. It synchronizes Core state with platform-specific `ReminderHandler` via an internal event bus. The platform handler is the source of truth for reminders.
+
+### MessageCenter (Internal)
+Composition-owned one-shot effect hub for internal Core messages. It uses a `MutableSharedFlow<CoreMessage>` with no replay and no persistence. Messages are not stored in `AppState`.
+
+Reminder-created messages are published from the reminder event handling path when `RemindersUpdated` contains reminders missing from the current service state.
+
+### CoreMessage (Internal)
+Rich internal payload used inside Core message stories, services, and use cases. Platforms never receive `CoreMessage` directly.
+
+### AppMessage
+Public platform-facing message model emitted by `MessagesInteractor`. Message models keep platform-ready display text only; rich Core payload fields are folded into that text during interactor mapping.
+
+### MessagesService (Internal)
+Stateless bridge over `MessageCenter`. Publish operations go through the stateless service request pipeline, while `messages()` exposes the one-shot internal message flow to Core stories without mapping messages to public models or storing state.
 
 ### NetworkService (Internal)
 Stateless service for network operations. Wraps `JsonRequestManager` and provide sequential handling for JSON loading requests. Does not cache results.
