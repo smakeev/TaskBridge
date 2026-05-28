@@ -46,7 +46,7 @@ private fun NavigationScreen(
 ) {
     val repositoriesStorage = LocalRepositoriesStorage.current
     val navigationRepository = remember(repositoriesStorage) {
-        repositoriesStorage.navigationRepository()
+        repositoriesStorage.navigationRepository
     }
     val currentDestination by remember(navigationRepository, rootDestination) {
         navigationRepository.activePath
@@ -63,16 +63,16 @@ private fun DestinationMapper(
 ) {
     val repositoriesStorage = LocalRepositoriesStorage.current
     val navigationRepository = remember(repositoriesStorage) {
-        repositoriesStorage.navigationRepository()
+        repositoriesStorage.navigationRepository
     }
     val tasksRepository = remember(repositoriesStorage) {
-        repositoriesStorage.tasksRepository()
+        repositoriesStorage.tasksRepository
     }
     val remindersRepository = remember(repositoriesStorage) {
-        repositoriesStorage.remindersRepository()
+        repositoriesStorage.remindersRepository
     }
     val messagesRepository = remember(repositoriesStorage) {
-        repositoriesStorage.messagesRepository()
+        repositoriesStorage.messagesRepository
     }
 
     when (destination) {
@@ -94,10 +94,10 @@ private fun DestinationMapper(
 private fun TemplatesRootDestination() {
     val repositoriesStorage = LocalRepositoriesStorage.current
     val templatesRepository = remember(repositoriesStorage) {
-        repositoriesStorage.taskTemplatesRepository()
+        repositoriesStorage.taskTemplatesRepository
     }
     val tasksRepository = remember(repositoriesStorage) {
-        repositoriesStorage.tasksRepository()
+        repositoriesStorage.tasksRepository
     }
     val templatesViewModel: TaskTemplatesViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {

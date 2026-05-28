@@ -48,10 +48,10 @@ class MainActivity : ComponentActivity() {
             val snackbarHostState = remember { SnackbarHostState() }
             CompositionLocalProvider(LocalRepositoriesStorage provides repositoriesStorage) {
                 val navigationRepository = remember(repositoriesStorage) {
-                    repositoriesStorage.navigationRepository()
+                    repositoriesStorage.navigationRepository
                 }
                 val messagesRepository = remember(repositoriesStorage) {
-                    repositoriesStorage.messagesRepository()
+                    repositoriesStorage.messagesRepository
                 }
                 val currentTab by navigationRepository.currentTab.collectAsState(initial = AppTab.TASKS)
 

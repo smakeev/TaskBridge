@@ -6,46 +6,29 @@ import com.taskbridge.android.repository.impl.RemindersRepositoryImpl
 import com.taskbridge.android.repository.impl.TaskTemplatesRepositoryImpl
 import com.taskbridge.android.repository.impl.TasksRepositoryImpl
 import com.taskbridge.core.TaskBridge
-import java.lang.ref.WeakReference
 import kotlinx.coroutines.CoroutineScope
 
 class RepositoriesStorage(
     private val taskBridge: TaskBridge,
     private val scope: CoroutineScope
 ) {
-    private var navigationRepositoryRef: WeakReference<NavigationRepository>? = null
-    private var taskTemplatesRepositoryRef: WeakReference<TaskTemplatesRepository>? = null
-    private var tasksRepositoryRef: WeakReference<TasksRepository>? = null
-    private var remindersRepositoryRef: WeakReference<RemindersRepository>? = null
-    private var messagesRepositoryRef: WeakReference<MessagesRepository>? = null
-
-    fun navigationRepository(): NavigationRepository {
-        navigationRepositoryRef?.get()?.let { return it }
-        return NavigationRepositoryImpl(taskBridge.navigationInteractor())
-            .also { navigationRepositoryRef = WeakReference(it) }
+    val navigationRepository: NavigationRepository by lazy {
+        NavigationRepositoryImpl(taskBridge.navigationInteractor())
     }
 
-    fun taskTemplatesRepository(): TaskTemplatesRepository {
-        taskTemplatesRepositoryRef?.get()?.let { return it }
-        return TaskTemplatesRepositoryImpl(taskBridge.templatesInteractor())
-            .also { taskTemplatesRepositoryRef = WeakReference(it) }
+    val taskTemplatesRepository: TaskTemplatesRepository by lazy {
+        TaskTemplatesRepositoryImpl(taskBridge.templatesInteractor())
     }
 
-    fun tasksRepository(): TasksRepository {
-        tasksRepositoryRef?.get()?.let { return it }
-        return TasksRepositoryImpl(taskBridge.tasksInteractor())
-            .also { tasksRepositoryRef = WeakReference(it) }
+    val tasksRepository: TasksRepository by lazy {
+        TasksRepositoryImpl(taskBridge.tasksInteractor())
     }
 
-    fun remindersRepository(): RemindersRepository {
-        remindersRepositoryRef?.get()?.let { return it }
-        return RemindersRepositoryImpl(taskBridge.remindersInteractor(), scope)
-            .also { remindersRepositoryRef = WeakReference(it) }
+    val remindersRepository: RemindersRepository by lazy {
+        RemindersRepositoryImpl(taskBridge.remindersInteractor(), scope)
     }
 
-    fun messagesRepository(): MessagesRepository {
-        messagesRepositoryRef?.get()?.let { return it }
-        return MessagesRepositoryImpl(taskBridge.messagesInteractor())
-            .also { messagesRepositoryRef = WeakReference(it) }
+    val messagesRepository: MessagesRepository by lazy {
+        MessagesRepositoryImpl(taskBridge.messagesInteractor())
     }
 }
