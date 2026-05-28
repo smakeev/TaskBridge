@@ -8,30 +8,30 @@ import com.taskbridge.core.models.navigation.NavigationDestinationMessage
 /**
  * Use case for push navigation inside the selected tab stack.
  */
-public class PushNavigationUseCase internal constructor(
+internal class PushNavigationUseCase(
     private val assembler: CoreAssembler
 ) {
-    public suspend fun pushDestination(destination: NavigationDestination) {
+    suspend fun pushDestination(destination: NavigationDestination) {
         val story = assembler.stories.pushDestination(assembler)
         story(destination)
     }
 
-    public suspend fun popDestination() {
+    suspend fun popDestination() {
         val story = assembler.stories.popDestination(assembler)
         story()
     }
 
-    public suspend fun pullToRoot(tab: AppTab) {
+    suspend fun pullToRoot(tab: AppTab) {
         val story = assembler.stories.pullToRoot(assembler)
         story(tab)
     }
 
-    public suspend fun setNavigationDestinationMessage(message: NavigationDestinationMessage?) {
+    suspend fun setNavigationDestinationMessage(message: NavigationDestinationMessage?) {
         val story = assembler.stories.setNavigationDestinationMessage(assembler)
         story(message)
     }
 
-    public suspend fun consumeNavigationDestinationMessage(
+    suspend fun consumeNavigationDestinationMessage(
         scopeId: String
     ): NavigationDestinationMessage? {
         val fetchStory = assembler.stories.fetchNavigationDestinationMessage(assembler)

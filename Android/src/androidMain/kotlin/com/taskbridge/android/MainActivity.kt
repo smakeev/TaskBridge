@@ -41,7 +41,7 @@ class MainActivity : ComponentActivity() {
             reminderHandler = AndroidReminderHandler(this)
         )
         val taskBridge = TaskBridge(platformDependencies, platformHandlers)
-        val repositoriesStorage = RepositoriesStorage(taskBridge, lifecycleScope)
+        val repositoriesStorage = RepositoriesStorage.create(taskBridge, lifecycleScope)
 
         setContent {
             val scope = rememberCoroutineScope()

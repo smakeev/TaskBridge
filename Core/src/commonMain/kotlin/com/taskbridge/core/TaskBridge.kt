@@ -1,13 +1,9 @@
 package com.taskbridge.core
 
 import com.taskbridge.core.composition.CoreAssembler
+import com.taskbridge.core.composition.CoreRepositoryAssembler
 import com.taskbridge.core.events.CoreEventEmitter
 import com.taskbridge.core.handlers.CorePlatformHandlers
-import com.taskbridge.core.interactors.messages.MessagesInteractor
-import com.taskbridge.core.interactors.navigation.NavigationInteractor
-import com.taskbridge.core.interactors.reminders.RemindersInteractor
-import com.taskbridge.core.interactors.tasks.TasksInteractor
-import com.taskbridge.core.interactors.templates.TemplatesInteractor
 import com.taskbridge.core.storage.tasks.PlatformDependencies
 import kotlin.reflect.KClass
 
@@ -21,9 +17,9 @@ public class TaskBridge(
 
     public companion object {
         public const val TEMPLATES_URL: String = "https://raw.githubusercontent.com/smakeev/TaskBridge/main/docs/mock-api/templates.json"
-        
+
         /**
-         * TTL for task templates. 
+         * TTL for task templates.
          * TODO: In production this value could come from remote config, backend metadata, or feature flags.
          */
         public const val TEMPLATES_TTL_MILLIS: Long = 10 * 60 * 1000L // 10 minutes
@@ -43,38 +39,22 @@ public class TaskBridge(
         get() = assembler.eventEmitter
 
     /**
-     * Provides access to the navigation interactor.
+     * One-shot bootstrap entry point.
+     *
+     * Core constructs every public interactor and hands them to [builder] inside
+     * a [CoreRepositoryAssembler] scope. The platform is expected to wire each
+     * interactor into its repository implementation inside the lambda and return
+     * the resulting repositories container.
+     *
+     * Repositories may then hold their interactor as `private val ...` for the
+     * lifetime of the app; the [CoreRepositoryAssembler] itself is intended to
+     * be discarded once `builder` returns.
+     *
+     * No individual `xxxInteractor()` getters are exposed on this class — this
+     * is the only path by which platform code can obtain an interactor instance.
      */
-    public fun navigationInteractor(): NavigationInteractor {
-        return assembler.navigationInteractor()
-    }
-
-    /**
-     * Provides access to the templates interactor.
-     */
-    public fun templatesInteractor(): TemplatesInteractor {
-        return assembler.templatesInteractor()
-    }
-
-    /**
-     * Provides access to the tasks interactor.
-     */
-    public fun tasksInteractor(): TasksInteractor {
-        return assembler.tasksInteractor()
-    }
-
-    /**
-     * Provides access to the reminders interactor.
-     */
-    public fun remindersInteractor(): RemindersInteractor {
-        return assembler.remindersInteractor()
-    }
-
-    /**
-     * Provides access to one-shot platform messages.
-     */
-    public fun messagesInteractor(): MessagesInteractor {
-        return assembler.messagesInteractor()
+    public fun <T : Any> bootstrap(builder: (CoreRepositoryAssembler) -> T): T {
+        return builder(assembler.coreRepositoryAssembler())
     }
 
     /**

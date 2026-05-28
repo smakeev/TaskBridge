@@ -13,6 +13,7 @@
 		0B2657459C05185EA86E5B75 /* TasksRepositoryImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1048CC77964A92134A5B65B2 /* TasksRepositoryImpl.swift */; };
 		118AE9A0F846486E8F53BE9D /* NavigationUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = C884BCE931C440F1845887A7 /* NavigationUtils.swift */; };
 		173C2B09580E1AA33E3C2ABA /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA8F2A875CDF1E5AA309B600 /* ContentView.swift */; };
+		1DA511A70D6B49C88BAE3815 /* RepositoriesStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B51586339DF499B88F5270C /* RepositoriesStorage.swift */; };
 		30170848BB27FDDCD2D5CDAB /* TaskRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E930B642150759D961AFC198 /* TaskRowView.swift */; };
 		30A9B74EF5CC9A00AB71982C /* TasksRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78D770221C5124D58A59FB5E /* TasksRepository.swift */; };
 		31453A9C26D2CCA00297FFFE /* TaskTemplatesRepositoryImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5F840A986ABC08789C90EA6 /* TaskTemplatesRepositoryImpl.swift */; };
@@ -55,6 +56,7 @@
 		26BD05D101C7994ECC0C661D /* MessagesRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessagesRepository.swift; sourceTree = "<group>"; };
 		27C9FBED48AEFDB8615F2E57 /* TemplateTreeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateTreeView.swift; sourceTree = "<group>"; };
 		2E54B2ABD259366FDC89F49D /* TaskReminderSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskReminderSheet.swift; sourceTree = "<group>"; };
+		2B51586339DF499B88F5270C /* RepositoriesStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoriesStorage.swift; sourceTree = "<group>"; };
 		4612717490FCEACB644CD126 /* ReminderDetailsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderDetailsView.swift; sourceTree = "<group>"; };
 		4A3F1D56E59648A9B1830B03 /* ScrollBlinkHighlighter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollBlinkHighlighter.swift; sourceTree = "<group>"; };
 		4674190DFECF1A236713E5E7 /* TasksRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TasksRootView.swift; sourceTree = "<group>"; };
@@ -114,6 +116,7 @@
 				0B3AF71ADBE0A464992FF535 /* .gitkeep */,
 				26BD05D101C7994ECC0C661D /* MessagesRepository.swift */,
 				92A4367BEAE8DB4EA5AA9343 /* NavigationRepository.swift */,
+				2B51586339DF499B88F5270C /* RepositoriesStorage.swift */,
 				9E8F7FF7B65770B23795D4D9 /* RemindersRepository.swift */,
 				78D770221C5124D58A59FB5E /* TasksRepository.swift */,
 				9542997F782C197AF50B79E7 /* TaskTemplatesRepository.swift */,
@@ -370,6 +373,7 @@
 				40211259DF891C250656FF1A /* NavigationRepositoryImpl.swift in Sources */,
 				118AE9A0F846486E8F53BE9D /* NavigationUtils.swift in Sources */,
 				33E18F05B30C5599EFC4C692 /* ReminderDetailsView.swift in Sources */,
+				1DA511A70D6B49C88BAE3815 /* RepositoriesStorage.swift in Sources */,
 				C87389D7316AE4B457E31AF5 /* RemindersRepository.swift in Sources */,
 				EBDFA0FDC447D62C55E13295 /* RemindersRepositoryImpl.swift in Sources */,
 				0423DF71F1827185B9ECD734 /* RemindersRootView.swift in Sources */,

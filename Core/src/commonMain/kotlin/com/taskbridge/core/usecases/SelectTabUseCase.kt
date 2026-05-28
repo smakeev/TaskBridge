@@ -6,10 +6,10 @@ import com.taskbridge.core.models.navigation.AppTab
 /**
  * Use case for selecting a tab.
  */
-public class SelectTabUseCase internal constructor(
+internal class SelectTabUseCase(
     private val assembler: CoreAssembler
 ) {
-    public suspend fun selectTab(tab: AppTab) {
+    suspend fun selectTab(tab: AppTab) {
         val story = assembler.stories.selectTab(assembler)
         story(tab)
     }

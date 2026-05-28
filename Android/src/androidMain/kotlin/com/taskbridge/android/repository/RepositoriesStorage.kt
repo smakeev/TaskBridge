@@ -6,29 +6,38 @@ import com.taskbridge.android.repository.impl.RemindersRepositoryImpl
 import com.taskbridge.android.repository.impl.TaskTemplatesRepositoryImpl
 import com.taskbridge.android.repository.impl.TasksRepositoryImpl
 import com.taskbridge.core.TaskBridge
+import com.taskbridge.core.composition.CoreRepositoryAssembler
 import kotlinx.coroutines.CoroutineScope
 
-class RepositoriesStorage(
-    private val taskBridge: TaskBridge,
+class RepositoriesStorage private constructor(
+    private val interactors: CoreRepositoryAssembler,
     private val scope: CoroutineScope
 ) {
     val navigationRepository: NavigationRepository by lazy {
-        NavigationRepositoryImpl(taskBridge.navigationInteractor())
+        NavigationRepositoryImpl(interactors.navigationInteractor())
     }
 
     val taskTemplatesRepository: TaskTemplatesRepository by lazy {
-        TaskTemplatesRepositoryImpl(taskBridge.templatesInteractor())
+        TaskTemplatesRepositoryImpl(interactors.templatesInteractor())
     }
 
     val tasksRepository: TasksRepository by lazy {
-        TasksRepositoryImpl(taskBridge.tasksInteractor())
+        TasksRepositoryImpl(interactors.tasksInteractor())
     }
 
     val remindersRepository: RemindersRepository by lazy {
-        RemindersRepositoryImpl(taskBridge.remindersInteractor(), scope)
+        RemindersRepositoryImpl(interactors.remindersInteractor(), scope)
     }
 
     val messagesRepository: MessagesRepository by lazy {
-        MessagesRepositoryImpl(taskBridge.messagesInteractor())
+        MessagesRepositoryImpl(interactors.messagesInteractor())
+    }
+
+    companion object {
+        fun create(taskBridge: TaskBridge, scope: CoroutineScope): RepositoriesStorage {
+            return taskBridge.bootstrap { interactors ->
+                RepositoriesStorage(interactors, scope)
+            }
+        }
     }
 }

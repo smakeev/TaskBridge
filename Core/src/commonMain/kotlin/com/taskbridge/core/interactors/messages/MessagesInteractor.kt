@@ -1,20 +1,28 @@
 package com.taskbridge.core.interactors.messages
 
+import com.taskbridge.core.composition.CoreAccess
 import com.taskbridge.core.messages.internal.CoreMessage
 import com.taskbridge.core.models.messages.AppMessage
 import com.taskbridge.core.models.messages.AppMessageError
 import com.taskbridge.core.models.messages.AppMessageKey
 import com.taskbridge.core.models.reminders.ReminderType
-import com.taskbridge.core.usecases.messages.MessagesUseCase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.datetime.Instant
 import kotlin.reflect.KClass
 
-public class MessagesInteractor internal constructor(
-    private val messagesUseCase: MessagesUseCase
+/**
+ * Platform-facing interactor for messages.
+ *
+ * The [accessToken] parameter prevents construction outside the Core module:
+ * only Core can mint a [CoreAccess] instance. The internal use case is
+ * pulled from the token; its type is not exposed in this signature.
+ */
+public class MessagesInteractor public constructor(
+    accessToken: CoreAccess
 ) {
+    private val messagesUseCase = accessToken.dependencies.messagesUseCase
     private val supportedInboundTypes: Set<KClass<out AppMessage>> = emptySet()
 
     private data class OutboundMapper(

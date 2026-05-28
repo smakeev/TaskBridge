@@ -1,24 +1,26 @@
 package com.taskbridge.core.interactors.navigation
 
+import com.taskbridge.core.composition.CoreAccess
 import com.taskbridge.core.models.navigation.AppTab
 import com.taskbridge.core.models.navigation.NavigationDestination
 import com.taskbridge.core.models.navigation.NavigationDestinationMessage
 import com.taskbridge.core.models.navigation.NavigationOverlay
 import com.taskbridge.core.models.navigation.NavigationPath
-import com.taskbridge.core.usecases.NavigationStateObserverUseCase
-import com.taskbridge.core.usecases.PushNavigationUseCase
-import com.taskbridge.core.usecases.SelectTabUseCase
 import kotlinx.coroutines.flow.Flow
 
 /**
  * Platform-facing interactor for navigation.
- * Uses specific use cases provided by the CoreAssembler.
+ *
+ * The [accessToken] parameter prevents construction outside the Core module:
+ * only Core can mint a [CoreAccess] instance. Internal dependencies are
+ * pulled from the token; their types are not exposed in this signature.
  */
-public class NavigationInteractor(
-    private val selectTabUseCase: SelectTabUseCase,
-    private val pushNavigationUseCase: PushNavigationUseCase,
-    private val observerUseCase: NavigationStateObserverUseCase
+public class NavigationInteractor public constructor(
+    accessToken: CoreAccess
 ) {
+    private val selectTabUseCase = accessToken.dependencies.selectTabUseCase
+    private val pushNavigationUseCase = accessToken.dependencies.pushNavigationUseCase
+    private val observerUseCase = accessToken.dependencies.navigationObserverUseCase
     public val activePath: Flow<NavigationPath?> = observerUseCase.subscribeOnActivePath()
     public val currentTab: Flow<AppTab> = observerUseCase.subscribeOnCurrentTab()
     public val overlay: Flow<NavigationOverlay?> = observerUseCase.subscribeOnOverlay()

@@ -35,35 +35,42 @@ internal class CoreAssembler(
     val stories = UserStoriesContainer()
     val useCases = UseCaseContainer()
 
-    fun navigationInteractor(): NavigationInteractor {
-        return NavigationInteractor(
-            selectTabUseCase = useCases.get(this, SelectTabUseCase::class),
-            pushNavigationUseCase = useCases.get(this, PushNavigationUseCase::class),
-            observerUseCase = useCases.get(this, NavigationStateObserverUseCase::class)
+    private val coreAccess: CoreAccess by lazy {
+        CoreAccess(
+            dependencies = InteractorDependencies(
+                selectTabUseCase = useCases.get(this, SelectTabUseCase::class),
+                pushNavigationUseCase = useCases.get(this, PushNavigationUseCase::class),
+                navigationObserverUseCase = useCases.get(this, NavigationStateObserverUseCase::class),
+                tasksUseCase = useCases.get(this, TasksUseCase::class),
+                templatesUseCase = useCases.get(this, TaskTemplatesUseCase::class),
+                remindersUseCase = useCases.get(this, RemindersUseCase::class),
+                messagesUseCase = useCases.get(this, MessagesUseCase::class)
+            )
         )
     }
 
-    fun templatesInteractor(): TemplatesInteractor {
-        return TemplatesInteractor(
-            useCase = useCases.get(this, TaskTemplatesUseCase::class)
-        )
-    }
+    // Lazy interactor instances. Each is built on first access and reused
+    // thereafter. They live on the assembler so the same TaskBridge always
+    // hands out the same interactor instances regardless of how many times
+    // [coreRepositoryAssembler] is invoked.
+    private val lazyNavigationInteractor: Lazy<NavigationInteractor> =
+        lazy { NavigationInteractor(coreAccess) }
+    private val lazyTasksInteractor: Lazy<TasksInteractor> =
+        lazy { TasksInteractor(coreAccess) }
+    private val lazyTemplatesInteractor: Lazy<TemplatesInteractor> =
+        lazy { TemplatesInteractor(coreAccess) }
+    private val lazyRemindersInteractor: Lazy<RemindersInteractor> =
+        lazy { RemindersInteractor(coreAccess) }
+    private val lazyMessagesInteractor: Lazy<MessagesInteractor> =
+        lazy { MessagesInteractor(coreAccess) }
 
-    fun tasksInteractor(): TasksInteractor {
-        return TasksInteractor(
-            useCase = useCases.get(this, TasksUseCase::class)
-        )
-    }
-
-    fun remindersInteractor(): RemindersInteractor {
-        return RemindersInteractor(
-            useCase = useCases.get(this, RemindersUseCase::class)
-        )
-    }
-
-    fun messagesInteractor(): MessagesInteractor {
-        return MessagesInteractor(
-            messagesUseCase = useCases.get(this, MessagesUseCase::class)
+    fun coreRepositoryAssembler(): CoreRepositoryAssembler {
+        return CoreRepositoryAssembler(
+            navigationInteractor = { lazyNavigationInteractor.value },
+            tasksInteractor = { lazyTasksInteractor.value },
+            templatesInteractor = { lazyTemplatesInteractor.value },
+            remindersInteractor = { lazyRemindersInteractor.value },
+            messagesInteractor = { lazyMessagesInteractor.value }
         )
     }
 }

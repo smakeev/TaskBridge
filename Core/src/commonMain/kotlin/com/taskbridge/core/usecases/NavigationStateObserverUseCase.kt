@@ -11,31 +11,31 @@ import kotlinx.coroutines.flow.map
 /**
  * Use case for observing and fetching navigation state.
  */
-public class NavigationStateObserverUseCase internal constructor(
+internal class NavigationStateObserverUseCase(
     private val assembler: CoreAssembler
 ) {
-    public fun subscribeOnActivePath(): Flow<NavigationPath?> {
+    fun subscribeOnActivePath(): Flow<NavigationPath?> {
         return assembler.stories.subscribeToActivePath(assembler)()
     }
 
-    public fun subscribeOnCurrentTab(): Flow<AppTab> {
+    fun subscribeOnCurrentTab(): Flow<AppTab> {
         return assembler.stories.subscribeToNavigation(assembler)()
             .map { it.selectedTab }
     }
 
-    public fun subscribeOnOverlay(): Flow<NavigationOverlay?> {
+    fun subscribeOnOverlay(): Flow<NavigationOverlay?> {
         return assembler.stories.subscribeToOverlay(assembler)()
     }
 
-    public suspend fun fetchActivePath(): NavigationPath? {
+    suspend fun fetchActivePath(): NavigationPath? {
         return subscribeOnActivePath().first()
     }
 
-    public suspend fun fetchCurrentTab(): AppTab {
+    suspend fun fetchCurrentTab(): AppTab {
         return subscribeOnCurrentTab().first()
     }
 
-    public suspend fun fetchOverlay(): NavigationOverlay? {
+    suspend fun fetchOverlay(): NavigationOverlay? {
         return subscribeOnOverlay().first()
     }
 }

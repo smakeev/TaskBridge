@@ -1,20 +1,25 @@
 package com.taskbridge.core.interactors.templates
 
+import com.taskbridge.core.composition.CoreAccess
 import com.taskbridge.core.models.templates.TaskTemplatesState
 import com.taskbridge.core.network.templates.dto.TaskTemplateDto
 import com.taskbridge.core.network.templates.dto.toDomain
 import com.taskbridge.core.services.remote.RemoteResourceStatus
-import com.taskbridge.core.usecases.templates.TaskTemplatesUseCase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 /**
  * Platform-facing interactor for managing task templates.
  * Maps Core internal data (RemoteResourceEntry) to user-facing TaskTemplatesState.
+ *
+ * The [accessToken] parameter prevents construction outside the Core module:
+ * only Core can mint a [CoreAccess] instance. The internal use case is
+ * pulled from the token; its type is not exposed in this signature.
  */
-public class TemplatesInteractor internal constructor(
-    private val useCase: TaskTemplatesUseCase
+public class TemplatesInteractor public constructor(
+    accessToken: CoreAccess
 ) {
+    private val useCase = accessToken.dependencies.templatesUseCase
     /**
      * Observable flow of the current templates state.
      */
