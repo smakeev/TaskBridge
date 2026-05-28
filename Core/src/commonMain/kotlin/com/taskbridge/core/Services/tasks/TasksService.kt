@@ -1,6 +1,8 @@
 package com.taskbridge.core.services.tasks
 
+import com.taskbridge.core.messages.internal.CoreMessage
 import com.taskbridge.core.services.common.BaseStatefulService
+import com.taskbridge.core.stories.messages.PublishMessageStory
 import com.taskbridge.core.storage.tasks.TaskStorageManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -12,7 +14,8 @@ import kotlinx.coroutines.CoroutineScope
  */
 internal class TasksService(
     scope: CoroutineScope,
-    private val storageManager: TaskStorageManager
+    private val storageManager: TaskStorageManager,
+    private val publishMessageStory: PublishMessageStory
 ) : BaseStatefulService<TasksCommand, TasksServiceData>(
     initialData = TasksServiceData(),
     scope = scope
@@ -21,15 +24,20 @@ internal class TasksService(
     override suspend fun handleCommand(command: TasksCommand) {
         when (command) {
             is TasksCommand.LoadTasks -> performLoad()
-            is TasksCommand.CreateTask -> performMutation {
-                storageManager.upsertTaskTree(command.task)
-            }
+            is TasksCommand.CreateTask -> performCreate(command)
             is TasksCommand.ReplaceTask -> performMutation {
                 storageManager.upsertTaskTree(command.task)
             }
             is TasksCommand.DeleteTaskTree -> performMutation {
                 storageManager.deleteTaskTree(command.taskId)
             }
+        }
+    }
+
+    private suspend fun performCreate(command: TasksCommand.CreateTask) {
+        performMutation {
+            storageManager.upsertTaskTree(command.task)
+            publishMessageStory.publish(CoreMessage.TaskAdded(task = command.task))
         }
     }
 

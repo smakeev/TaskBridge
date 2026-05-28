@@ -62,8 +62,15 @@ struct ContentView: View {
                         }
                     }
                     .task {
-                        for await message in messagesRepo.observe(type: AppMessageKeys.shared.reminderCreated) {
-                            showToast(for: message)
+                        for await message in messagesRepo.observe(
+                            types: [
+                                AppMessageKeys.shared.reminderCreated,
+                                AppMessageKeys.shared.taskAdded
+                            ]
+                        ) {
+                            if let toastable = message as? Toastable {
+                                showToast(for: toastable)
+                            }
                         }
                     }
             } else {
@@ -81,11 +88,7 @@ struct ContentView: View {
         }
     }
 
-    private func showToast(for message: AppMessage) {
-        guard let reminderCreated = message as? AppMessageReminderCreated else {
-            return
-        }
-
-        toastPresenter.show(reminderCreated.text)
+    private func showToast(for toastable: Toastable) {
+        toastPresenter.show(toastable.text)
     }
 }

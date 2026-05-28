@@ -67,7 +67,7 @@ Public platform-facing interactor for one-shot messages.
 - `observe(types: List<AppMessageKey>)`: Returns a `Flow<AppMessage>` for the requested message types. Duplicate types are collapsed before subscription.
 - `publish(message)`: Reserved for future platform-to-Core messages. Currently fails with `AppMessageError.UnsupportedCoreMessage`.
 
-The interactor is the only layer that maps internal `CoreMessage` payloads to public `AppMessage` values. It uses a mapper registry keyed by concrete `AppMessage` type, exposes public `AppMessageKey` values instead of raw reflection types, can observe all mapped messages, and can request a single Core stream filtered by a list of requested types. Platform-to-Core publish support is guarded by an interactor-owned set of supported `AppMessage` types. Reminder-created text is currently hardcoded here, but it should later use a `LocalizationHandler` to return localized platform-ready text.
+The interactor is the only layer that maps internal `CoreMessage` payloads to public `AppMessage` values. It uses a mapper registry keyed by concrete `AppMessage` type, exposes public `AppMessageKey` values instead of raw reflection types, can observe all mapped messages, and can request a single Core stream filtered by a list of requested types. Platform-to-Core publish support is guarded by an interactor-owned set of supported `AppMessage` types. Toastable message text is currently hardcoded here, but it should later use a `LocalizationHandler` to return localized platform-ready text.
 
 ---
 
@@ -236,7 +236,7 @@ Reminder-created messages are published from the reminder event handling path wh
 Rich internal payload used inside Core message stories, services, and use cases. Platforms never receive `CoreMessage` directly.
 
 ### AppMessage
-Public platform-facing message model emitted by `MessagesInteractor`. Message models keep platform-ready display text only; rich Core payload fields are folded into that text during interactor mapping.
+Public platform-facing message model emitted by `MessagesInteractor`. `AppMessage` does not require display text by default; message variants that can be shown as a toast or snackbar additionally implement `Toastable`, which exposes platform-ready text. Rich Core payload fields are folded into that text during interactor mapping.
 
 ### MessagesService (Internal)
 Stateless bridge over `MessageCenter`. Publish operations go through the stateless service request pipeline, while `messages()` exposes the one-shot internal message flow to Core stories without mapping messages to public models or storing state.

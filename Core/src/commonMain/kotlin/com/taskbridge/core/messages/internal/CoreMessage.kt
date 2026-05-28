@@ -2,6 +2,7 @@ package com.taskbridge.core.messages.internal
 
 import com.taskbridge.core.models.reminders.ReminderId
 import com.taskbridge.core.models.reminders.ReminderType
+import com.taskbridge.core.models.tasks.TaskItem
 
 internal sealed interface CoreMessage {
     data class ReminderCreated(
@@ -9,5 +10,9 @@ internal sealed interface CoreMessage {
         val title: String,
         val type: ReminderType,
         val triggerAtMillis: Long
+    ) : CoreMessage
+
+    data class TaskAdded(
+        val task: TaskItem
     ) : CoreMessage
 }

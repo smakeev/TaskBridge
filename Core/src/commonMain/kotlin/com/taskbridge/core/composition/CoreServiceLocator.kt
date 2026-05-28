@@ -75,7 +75,8 @@ internal class CoreServiceLocator(
     private val tasksServiceInstance: TasksService by lazy {
         TasksService(
             scope = scope,
-            storageManager = taskStorageManagerInstance
+            storageManager = taskStorageManagerInstance,
+            publishMessageStory = PublishMessageStory(messagesServiceInstance)
         )
     }
 

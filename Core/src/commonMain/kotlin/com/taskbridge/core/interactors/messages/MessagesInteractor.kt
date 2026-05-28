@@ -28,6 +28,12 @@ public class MessagesInteractor internal constructor(
             mapMessage = { message ->
                 (message as? CoreMessage.ReminderCreated)?.toAppMessage()
             },
+        ),
+        AppMessage.TaskAdded::class to OutboundMapper(
+            coreType = CoreMessage.TaskAdded::class,
+            mapMessage = { message ->
+                (message as? CoreMessage.TaskAdded)?.toAppMessage()
+            },
         )
     )
 
@@ -72,7 +78,16 @@ public class MessagesInteractor internal constructor(
     private fun CoreMessage.ReminderCreated.toAppMessage(): AppMessage.ReminderCreated {
         // TODO: Use the upcoming LocalizationHandler to return localized platform-ready text.
         return AppMessage.ReminderCreated(
+            id = reminderId,
             text = "Reminder created: $title • ${type.label()} • ${triggerAtMillis.formatAsInstantText()}"
+        )
+    }
+
+    private fun CoreMessage.TaskAdded.toAppMessage(): AppMessage.TaskAdded {
+        // TODO: Use the upcoming LocalizationHandler to return localized platform-ready text.
+        return AppMessage.TaskAdded(
+            id = task.id,
+            text = "Task added: ${task.title}"
         )
     }
 

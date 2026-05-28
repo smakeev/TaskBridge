@@ -31,8 +31,8 @@ import com.taskbridge.android.ui.navigation.TasksNavigationScreen
 import com.taskbridge.android.ui.navigation.TemplatesNavigationScreen
 import com.taskbridge.core.TaskBridge
 import com.taskbridge.core.handlers.CorePlatformHandlers
-import com.taskbridge.core.models.messages.AppMessage
 import com.taskbridge.core.models.messages.AppMessageKeys
+import com.taskbridge.core.models.messages.Toastable
 import com.taskbridge.core.models.navigation.AppTab
 import com.taskbridge.core.storage.tasks.PlatformDependencies
 import kotlinx.coroutines.launch
@@ -65,9 +65,14 @@ class MainActivity : ComponentActivity() {
             val currentTab by navigationRepository.currentTab.collectAsState(initial = AppTab.TASKS)
 
             LaunchedEffect(messagesRepository, snackbarHostState) {
-                messagesRepository.observe(AppMessageKeys.reminderCreated).collect { message ->
-                    when (message) {
-                        is AppMessage.ReminderCreated -> snackbarHostState.showSnackbar(message.text)
+                messagesRepository.observe(
+                    listOf(
+                        AppMessageKeys.reminderCreated,
+                        AppMessageKeys.taskAdded
+                    )
+                ).collect { message ->
+                    (message as? Toastable)?.let { toastable ->
+                        snackbarHostState.showSnackbar(toastable.text)
                     }
                 }
             }
