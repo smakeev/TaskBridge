@@ -2,43 +2,89 @@ import SwiftUI
 import TaskBridgeCore
 
 struct RemindersRootView: View {
+    @Environment(\.remindersRepository) private var remindersRepository
+    @Environment(\.navigationRepository) private var navigationRepository
+    @Environment(\.messagesRepository) private var messagesRepository
+
+    var body: some View {
+        if let remindersRepository,
+           let navigationRepository,
+           let messagesRepository {
+            RemindersRootContent(
+                repository: remindersRepository,
+                navigationRepository: navigationRepository,
+                messagesRepository: messagesRepository
+            )
+        } else {
+            ProgressView("Initializing...")
+        }
+    }
+}
+
+private struct RemindersRootContent: View {
     @StateObject private var viewModel: RemindersViewModel
 
-    init(repository: RemindersRepository) {
-        _viewModel = StateObject(wrappedValue: RemindersViewModel(repository: repository))
+    @State private var highlightedReminderId: String?
+    @State private var highlightOpacity = 0.0
+
+    init(
+        repository: RemindersRepository,
+        navigationRepository: NavigationRepository,
+        messagesRepository: MessagesRepository
+    ) {
+        _viewModel = StateObject(wrappedValue: RemindersViewModel(
+            repository: repository,
+            navigationRepository: navigationRepository,
+            messagesRepository: messagesRepository
+        ))
     }
 
     var body: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 12) {
-                header
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 12) {
+                    header
 
-                if viewModel.state.isLoading && viewModel.state.reminders.isEmpty {
-                    ProgressView()
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 48)
+                    if viewModel.state.isLoading && viewModel.state.reminders.isEmpty {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 48)
+                    }
+
+                    if let error = viewModel.state.errorMessage {
+                        Text(error)
+                            .font(.callout)
+                            .foregroundColor(.red)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding()
+                            .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+                    }
+
+                    if !viewModel.state.isLoading && viewModel.state.reminders.isEmpty {
+                        emptyState
+                    }
+
+                    ForEach(viewModel.state.reminders, id: \.reminderIdValue) { reminder in
+                        reminderCard(reminder)
+                            .id(reminder.reminderIdValue)
+                    }
                 }
-
-                if let error = viewModel.state.errorMessage {
-                    Text(error)
-                        .font(.callout)
-                        .foregroundColor(.red)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding()
-                        .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
-                }
-
-                if !viewModel.state.isLoading && viewModel.state.reminders.isEmpty {
-                    emptyState
-                }
-
-                ForEach(viewModel.state.reminders, id: \.reminderIdValue) { reminder in
-                    reminderCard(reminder)
+                .padding(16)
+            }
+            .background(Color(.systemGroupedBackground))
+            .task {
+                await observeReminderCreatedMessages(scrollProxy: proxy)
+            }
+            .task {
+                await consumePendingNavigationMessage(scrollProxy: proxy)
+            }
+            .onChange(of: viewModel.state.reminders.map(\.reminderIdValue)) { _ in
+                guard let highlightedReminderId else { return }
+                withAnimation(.easeInOut(duration: 0.35)) {
+                    proxy.scrollTo(highlightedReminderId, anchor: .center)
                 }
             }
-            .padding(16)
         }
-        .background(Color(.systemGroupedBackground))
         .task {
             viewModel.loadReminders()
         }
@@ -102,9 +148,57 @@ struct RemindersRootView: View {
         }
         .padding(14)
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(
+            Color.accentColor.opacity(highlightedReminderId == reminder.reminderIdValue ? 0.22 * highlightOpacity : 0),
+            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+        )
         .overlay {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                .stroke(
+                    highlightedReminderId == reminder.reminderIdValue ? Color.accentColor.opacity(0.75 * highlightOpacity) : Color.primary.opacity(0.06),
+                    lineWidth: highlightedReminderId == reminder.reminderIdValue ? 2 : 1
+                )
+        }
+    }
+
+    private func observeReminderCreatedMessages(scrollProxy: ScrollViewProxy) async {
+        for await message in viewModel.observeReminderCreatedMessages() {
+            guard let reminderCreated = message as? AppMessageReminderCreated else { continue }
+            await scrollToAndBlink(id: reminderCreated.id.value, scrollProxy: scrollProxy)
+        }
+    }
+
+    private func consumePendingNavigationMessage(scrollProxy: ScrollViewProxy) async {
+        guard let message = try? await viewModel.consumeNavigationDestinationMessage(
+            scopeId: NavigationDestinationMessageScopeId.remindersRoot.scopeId
+        ),
+              let elementId = message as? NavigationDestinationMessageElementId else {
+            return
+        }
+
+        await scrollToAndBlink(id: elementId.value, scrollProxy: scrollProxy)
+    }
+
+    @MainActor
+    private func scrollToAndBlink(id: String, scrollProxy: ScrollViewProxy) async {
+        highlightedReminderId = id
+        withAnimation(.easeInOut(duration: 0.35)) {
+            scrollProxy.scrollTo(id, anchor: .center)
+        }
+
+        for _ in 0..<2 {
+            withAnimation(.easeInOut(duration: 1.0)) {
+                highlightOpacity = 1.0
+            }
+            await uncancellableSleep(nanoseconds: 1_000_000_000)
+            withAnimation(.easeInOut(duration: 1.0)) {
+                highlightOpacity = 0.0
+            }
+            await uncancellableSleep(nanoseconds: 1_000_000_000)
+        }
+
+        if highlightedReminderId == id {
+            highlightedReminderId = nil
         }
     }
 

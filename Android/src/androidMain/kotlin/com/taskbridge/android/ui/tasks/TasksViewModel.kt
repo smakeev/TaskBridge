@@ -2,10 +2,14 @@ package com.taskbridge.android.ui.tasks
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.taskbridge.android.repository.MessagesRepository
 import com.taskbridge.android.repository.NavigationRepository
 import com.taskbridge.android.repository.RemindersRepository
 import com.taskbridge.android.repository.TasksRepository
-import com.taskbridge.core.models.navigation.AppTab
+import com.taskbridge.core.models.messages.AppMessage
+import com.taskbridge.core.models.messages.AppMessageKeys
+import com.taskbridge.core.models.navigation.NavigationDestination
+import com.taskbridge.core.models.navigation.NavigationDestinationMessage
 import com.taskbridge.core.models.reminders.Reminder
 import com.taskbridge.core.models.reminders.ReminderId
 import com.taskbridge.core.models.reminders.ReminderType
@@ -15,6 +19,7 @@ import com.taskbridge.core.models.tasks.TaskProgress
 import com.taskbridge.core.models.tasks.TaskType
 import com.taskbridge.core.usecases.tasks.TasksState
 import java.util.UUID
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -23,7 +28,8 @@ import kotlinx.coroutines.launch
 class TasksViewModel(
     private val repository: TasksRepository,
     private val remindersRepository: RemindersRepository,
-    private val navigationRepository: NavigationRepository
+    private val navigationRepository: NavigationRepository,
+    private val messagesRepository: MessagesRepository
 ) : ViewModel() {
 
     val state: StateFlow<TasksState> = repository.tasksState
@@ -113,10 +119,32 @@ class TasksViewModel(
         viewModelScope.launch {
             runCatching {
                 remindersRepository.scheduleReminder(reminder)
-                navigationRepository.pullToRoot(AppTab.REMINDERS)
-                navigationRepository.selectTab(AppTab.REMINDERS)
             }
         }
+    }
+
+    fun openTaskDetails(task: TaskItem) {
+        viewModelScope.launch {
+            runCatching {
+                navigationRepository.pushDestination(NavigationDestination.TaskDetails(task.id.value))
+            }
+        }
+    }
+
+    fun popDestination() {
+        viewModelScope.launch {
+            runCatching {
+                navigationRepository.popDestination()
+            }
+        }
+    }
+
+    suspend fun consumeNavigationDestinationMessage(scopeId: String): NavigationDestinationMessage? {
+        return navigationRepository.consumeNavigationDestinationMessage(scopeId)
+    }
+
+    fun observeTaskCreatedMessages(): Flow<AppMessage> {
+        return messagesRepository.observe(AppMessageKeys.taskAdded)
     }
 
     private fun newTask(title: String, type: TaskType, parentId: TaskId?): TaskItem {

@@ -2,6 +2,7 @@ package com.taskbridge.core.services.appstate
 
 import com.taskbridge.core.models.navigation.AppTab
 import com.taskbridge.core.models.navigation.NavigationDestination
+import com.taskbridge.core.models.navigation.NavigationDestinationMessage
 import com.taskbridge.core.services.common.ServiceCommand
 
 internal sealed interface AppStateCommand : ServiceCommand {
@@ -17,5 +18,9 @@ internal sealed interface AppStateCommand : ServiceCommand {
 
     data class PullToRoot(
         val tab: AppTab
+    ) : AppStateCommand
+
+    data class SetNavigationDestinationMessage(
+        val message: NavigationDestinationMessage?
     ) : AppStateCommand
 }

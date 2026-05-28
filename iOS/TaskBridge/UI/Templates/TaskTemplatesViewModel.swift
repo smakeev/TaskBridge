@@ -6,20 +6,18 @@ class TaskTemplatesViewModel: ObservableObject {
     @Published var state: TaskTemplatesState = TaskTemplatesState(templates: [], isLoading: false, errorMessage: nil, lastLoadedAtMillis: nil)
     private let repository: TaskTemplatesRepository
     private let tasksRepository: TasksRepository
-    private let navigationRepository: NavigationRepository
     private var observationTask: Task<Void, Never>?
     
     init(
         repository: TaskTemplatesRepository,
-        tasksRepository: TasksRepository,
-        navigationRepository: NavigationRepository
+        tasksRepository: TasksRepository
     ) {
         self.repository = repository
         self.tasksRepository = tasksRepository
-        self.navigationRepository = navigationRepository
         
-        observationTask = Task {
+        observationTask = Task { [weak self, repository] in
             for await newState in repository.templatesState {
+                guard let self else { break }
                 self.state = newState
             }
         }
@@ -47,8 +45,6 @@ class TaskTemplatesViewModel: ObservableObject {
             try? await tasksRepository.createTask(
                 makeTask(from: template.rootTask, parentId: nil, titleOverride: trimmedTitle)
             )
-            try? await navigationRepository.pullToRoot(tab: .tasks)
-            try? await navigationRepository.selectTab(tab: .tasks)
         }
     }
 

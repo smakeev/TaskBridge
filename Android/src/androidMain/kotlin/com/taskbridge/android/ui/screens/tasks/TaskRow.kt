@@ -1,6 +1,7 @@
 package com.taskbridge.android.ui.screens.tasks
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -39,7 +40,9 @@ fun TaskTreeRows(
     onProgressChanged: (TaskItem, Int) -> Unit,
     onAddReminder: (TaskItem) -> Unit,
     onRename: (TaskItem) -> Unit,
-    onDelete: (TaskItem) -> Unit
+    onDelete: (TaskItem) -> Unit,
+    highlightedTaskId: String? = null,
+    highlightAlpha: Float = 0f
 ) {
     TaskRow(
         task = task,
@@ -49,7 +52,9 @@ fun TaskTreeRows(
         onProgressChanged = onProgressChanged,
         onAddReminder = onAddReminder,
         onRename = onRename,
-        onDelete = onDelete
+        onDelete = onDelete,
+        isHighlighted = highlightedTaskId == task.id.value,
+        highlightAlpha = highlightAlpha
     )
 }
 
@@ -62,14 +67,28 @@ fun TaskRow(
     onProgressChanged: (TaskItem, Int) -> Unit,
     onAddReminder: (TaskItem) -> Unit,
     onRename: (TaskItem) -> Unit,
-    onDelete: (TaskItem) -> Unit
+    onDelete: (TaskItem) -> Unit,
+    isHighlighted: Boolean = false,
+    highlightAlpha: Float = 0f
 ) {
+    val highlightColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f * highlightAlpha)
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = (minOf(depth, 4) * 14).dp)
             .clickable { onOpenTask(task) },
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isHighlighted) {
+                androidx.compose.ui.graphics.lerp(MaterialTheme.colorScheme.surface, highlightColor, highlightAlpha)
+            } else {
+                MaterialTheme.colorScheme.surface
+            }
+        ),
+        border = if (isHighlighted) {
+            BorderStroke(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.75f * highlightAlpha))
+        } else {
+            null
+        },
         elevation = CardDefaults.cardElevation(defaultElevation = if (depth == 0) 1.dp else 0.dp)
     ) {
         Row(

@@ -1,6 +1,8 @@
 package com.taskbridge.core.services.tasks
 
 import com.taskbridge.core.messages.internal.CoreMessage
+import com.taskbridge.core.models.tasks.TaskId
+import com.taskbridge.core.models.tasks.TaskItem
 import com.taskbridge.core.services.common.BaseStatefulService
 import com.taskbridge.core.stories.messages.PublishMessageStory
 import com.taskbridge.core.storage.tasks.TaskStorageManager
@@ -35,9 +37,32 @@ internal class TasksService(
     }
 
     private suspend fun performCreate(command: TasksCommand.CreateTask) {
-        performMutation {
+        updateState { it.copy(isLoading = true, errorMessage = null) }
+        try {
             storageManager.upsertTaskTree(command.task)
-            publishMessageStory.publish(CoreMessage.TaskAdded(task = command.task))
+            val loadedTasks = storageManager.loadAllTasks()
+            updateState {
+                it.copy(
+                    tasks = loadedTasks,
+                    isLoading = false,
+                    errorMessage = null
+                )
+            }
+            publishMessageStory.publish(
+                CoreMessage.TaskAdded(
+                    task = command.task,
+                    parentPath = loadedTasks.parentPath(targetTaskId = command.task.id)
+                )
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            updateState {
+                it.copy(
+                    isLoading = false,
+                    errorMessage = e.message ?: e::class.simpleName ?: "Unknown error"
+                )
+            }
         }
     }
 
@@ -87,5 +112,18 @@ internal class TasksService(
                 )
             }
         }
+    }
+
+    private fun List<TaskItem>.parentPath(targetTaskId: TaskId): List<TaskId> {
+        fun search(items: List<TaskItem>, parents: List<TaskId>): List<TaskId>? {
+            for (item in items) {
+                if (item.id == targetTaskId) return parents
+                val found = search(item.children, parents + item.id)
+                if (found != null) return found
+            }
+            return null
+        }
+
+        return search(this, emptyList()).orEmpty()
     }
 }

@@ -15,6 +15,7 @@ public sealed interface AppMessage {
 
     public data class TaskAdded(
         val id: TaskId,
+        val parentPath: List<TaskId>,
         override val text: String
     ) : AppMessage, Toastable
 }

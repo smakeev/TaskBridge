@@ -2,20 +2,35 @@ import SwiftUI
 import TaskBridgeCore
 
 struct TemplatesRootView: View {
+    @Environment(\.taskTemplatesRepository) private var templatesRepository
+    @Environment(\.tasksRepository) private var tasksRepository
+
+    var body: some View {
+        if let templatesRepository,
+           let tasksRepository {
+            TemplatesRootContent(
+                repository: templatesRepository,
+                tasksRepository: tasksRepository
+            )
+        } else {
+            ProgressView("Initializing...")
+        }
+    }
+}
+
+private struct TemplatesRootContent: View {
     @StateObject private var viewModel: TaskTemplatesViewModel
-    
+
     init(
         repository: TaskTemplatesRepository,
-        tasksRepository: TasksRepository,
-        navigationRepository: NavigationRepository
+        tasksRepository: TasksRepository
     ) {
         _viewModel = StateObject(wrappedValue: TaskTemplatesViewModel(
             repository: repository,
-            tasksRepository: tasksRepository,
-            navigationRepository: navigationRepository
+            tasksRepository: tasksRepository
         ))
     }
-    
+
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 14) {

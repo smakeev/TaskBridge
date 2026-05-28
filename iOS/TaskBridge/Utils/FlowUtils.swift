@@ -1,6 +1,17 @@
 import Foundation
 import TaskBridgeCore
 
+/// Sleep for the given duration without observing Task cancellation.
+/// Useful for pacing UI animations that must complete even if the
+/// owning `.task` modifier is cancelled mid-flow.
+func uncancellableSleep(nanoseconds: UInt64) async {
+    await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+        DispatchQueue.main.asyncAfter(deadline: .now() + .nanoseconds(Int(nanoseconds))) {
+            continuation.resume()
+        }
+    }
+}
+
 /**
  * Utility to bridge Kotlin Flows to Swift AsyncStreams with proper lifecycle management.
  * Enforces @MainActor to satisfy Kotlin/Native threading requirements for suspend functions.

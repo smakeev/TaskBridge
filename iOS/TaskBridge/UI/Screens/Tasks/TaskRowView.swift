@@ -4,6 +4,8 @@ import TaskBridgeCore
 struct TaskTreeRowsView: View {
     let task: TaskItem
     let depth: Int
+    let highlightedTaskId: String?
+    let highlightOpacity: Double
     let onOpen: (TaskItem) -> Void
     let onToggleCheckbox: (TaskItem) -> Void
     let onProgressChanged: (TaskItem, Int) -> Void
@@ -11,10 +13,36 @@ struct TaskTreeRowsView: View {
     let onRename: (TaskItem) -> Void
     let onDelete: (TaskItem) -> Void
 
+    init(
+        task: TaskItem,
+        depth: Int,
+        highlightedTaskId: String? = nil,
+        highlightOpacity: Double = 0,
+        onOpen: @escaping (TaskItem) -> Void,
+        onToggleCheckbox: @escaping (TaskItem) -> Void,
+        onProgressChanged: @escaping (TaskItem, Int) -> Void,
+        onAddReminder: @escaping (TaskItem) -> Void,
+        onRename: @escaping (TaskItem) -> Void,
+        onDelete: @escaping (TaskItem) -> Void
+    ) {
+        self.task = task
+        self.depth = depth
+        self.highlightedTaskId = highlightedTaskId
+        self.highlightOpacity = highlightOpacity
+        self.onOpen = onOpen
+        self.onToggleCheckbox = onToggleCheckbox
+        self.onProgressChanged = onProgressChanged
+        self.onAddReminder = onAddReminder
+        self.onRename = onRename
+        self.onDelete = onDelete
+    }
+
     var body: some View {
         TaskRowView(
             task: task,
             depth: depth,
+            isHighlighted: highlightedTaskId == task.taskIdValue,
+            highlightOpacity: highlightOpacity,
             onOpen: onOpen,
             onToggleCheckbox: onToggleCheckbox,
             onProgressChanged: onProgressChanged,
@@ -28,12 +56,38 @@ struct TaskTreeRowsView: View {
 struct TaskRowView: View {
     let task: TaskItem
     let depth: Int
+    let isHighlighted: Bool
+    let highlightOpacity: Double
     let onOpen: (TaskItem) -> Void
     let onToggleCheckbox: (TaskItem) -> Void
     let onProgressChanged: (TaskItem, Int) -> Void
     let onAddReminder: (TaskItem) -> Void
     let onRename: (TaskItem) -> Void
     let onDelete: (TaskItem) -> Void
+
+    init(
+        task: TaskItem,
+        depth: Int,
+        isHighlighted: Bool = false,
+        highlightOpacity: Double = 0,
+        onOpen: @escaping (TaskItem) -> Void,
+        onToggleCheckbox: @escaping (TaskItem) -> Void,
+        onProgressChanged: @escaping (TaskItem, Int) -> Void,
+        onAddReminder: @escaping (TaskItem) -> Void,
+        onRename: @escaping (TaskItem) -> Void,
+        onDelete: @escaping (TaskItem) -> Void
+    ) {
+        self.task = task
+        self.depth = depth
+        self.isHighlighted = isHighlighted
+        self.highlightOpacity = highlightOpacity
+        self.onOpen = onOpen
+        self.onToggleCheckbox = onToggleCheckbox
+        self.onProgressChanged = onProgressChanged
+        self.onAddReminder = onAddReminder
+        self.onRename = onRename
+        self.onDelete = onDelete
+    }
 
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
@@ -97,9 +151,16 @@ struct TaskRowView: View {
         .padding(14)
         .padding(.leading, CGFloat(min(depth, 4)) * 14)
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(
+            Color.accentColor.opacity(isHighlighted ? 0.22 * highlightOpacity : 0),
+            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+        )
         .overlay {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                .stroke(
+                    isHighlighted ? Color.accentColor.opacity(0.75 * highlightOpacity) : Color.primary.opacity(0.06),
+                    lineWidth: isHighlighted ? 2 : 1
+                )
         }
         .contentShape(Rectangle())
         .onTapGesture {

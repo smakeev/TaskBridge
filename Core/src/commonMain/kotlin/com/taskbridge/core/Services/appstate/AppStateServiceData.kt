@@ -2,12 +2,14 @@ package com.taskbridge.core.services.appstate
 
 import com.taskbridge.core.models.navigation.AppTab
 import com.taskbridge.core.models.navigation.NavigationDestination
+import com.taskbridge.core.models.navigation.NavigationDestinationMessage
 import com.taskbridge.core.models.navigation.NavigationPath
 import com.taskbridge.core.models.navigation.NavigationState
 import com.taskbridge.core.services.common.ServiceData
 
 internal data class AppStateServiceData(
-    val navigationState: NavigationState = initialNavigationState()
+    val navigationState: NavigationState = initialNavigationState(),
+    val navigationDestinationMessage: NavigationDestinationMessage? = null
 ) : ServiceData
 
 private fun initialNavigationState(): NavigationState {

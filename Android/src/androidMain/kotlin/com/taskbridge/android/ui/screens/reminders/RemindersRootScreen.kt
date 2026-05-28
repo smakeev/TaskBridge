@@ -1,5 +1,8 @@
 package com.taskbridge.android.ui.screens.reminders
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Notifications
@@ -25,6 +29,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -32,8 +38,15 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.taskbridge.android.repository.MessagesRepository
+import com.taskbridge.android.repository.NavigationDestinationMessageScopeId
+import com.taskbridge.android.repository.NavigationRepository
 import com.taskbridge.android.repository.RemindersRepository
 import com.taskbridge.android.ui.reminders.RemindersViewModel
+import com.taskbridge.core.models.messages.AppMessage
+import com.taskbridge.core.models.navigation.NavigationDestinationMessage
 import com.taskbridge.core.models.reminders.Reminder
 import com.taskbridge.core.models.reminders.ReminderType
 import java.text.DateFormat
@@ -41,23 +54,72 @@ import java.util.Date
 
 @Composable
 fun RemindersRootScreen(
-    remindersRepository: RemindersRepository
+    remindersRepository: RemindersRepository,
+    navigationRepository: NavigationRepository,
+    messagesRepository: MessagesRepository
 ) {
     val viewModel: RemindersViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 @Suppress("UNCHECKED_CAST")
-                return RemindersViewModel(remindersRepository) as T
+                return RemindersViewModel(
+                    remindersRepository,
+                    navigationRepository,
+                    messagesRepository
+                ) as T
             }
         }
     )
     val state by viewModel.state.collectAsState()
+    var highlightedReminderId by remember { mutableStateOf<String?>(null) }
+    val highlightAlpha = remember { Animatable(0f) }
+    val listState = rememberLazyListState()
+    val currentState by rememberUpdatedState(state)
+
+    suspend fun scrollToAndBlink(reminderId: String) {
+        highlightedReminderId = reminderId
+        val index = currentState.reminders.indexOfFirst { reminder -> reminder.id.value == reminderId }
+        if (index >= 0) {
+            listState.animateScrollToItem(index + remindersListHeaderOffset(currentState))
+        }
+        repeat(2) {
+            highlightAlpha.animateTo(1f, animationSpec = tween(durationMillis = 1000))
+            highlightAlpha.animateTo(0f, animationSpec = tween(durationMillis = 1000))
+        }
+        if (highlightedReminderId == reminderId) {
+            highlightedReminderId = null
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.loadReminders()
     }
 
+    LaunchedEffect(viewModel) {
+        viewModel.observeReminderCreatedMessages().collect { message ->
+            val reminderId = (message as? AppMessage.ReminderCreated)?.id?.value ?: return@collect
+            scrollToAndBlink(reminderId)
+        }
+    }
+
+    LaunchedEffect(highlightedReminderId, state.reminders) {
+        val reminderId = highlightedReminderId ?: return@LaunchedEffect
+        val index = state.reminders.indexOfFirst { reminder -> reminder.id.value == reminderId }
+        if (index >= 0) {
+            listState.animateScrollToItem(index + remindersListHeaderOffset(state))
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        val message = viewModel.consumeNavigationDestinationMessage(
+            NavigationDestinationMessageScopeId.RemindersRoot.scopeId
+        )
+        val reminderId = (message as? NavigationDestinationMessage.ElementId)?.value ?: return@LaunchedEffect
+        scrollToAndBlink(reminderId)
+    }
+
     LazyColumn(
+        state = listState,
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
@@ -110,10 +172,20 @@ fun RemindersRootScreen(
         items(state.reminders, key = { it.id.value }) { reminder ->
             ReminderCard(
                 reminder = reminder,
-                onDelete = { viewModel.cancelReminder(reminder.id) }
+                onDelete = { viewModel.cancelReminder(reminder.id) },
+                isHighlighted = highlightedReminderId == reminder.id.value,
+                highlightAlpha = highlightAlpha.value
             )
         }
     }
+}
+
+private fun remindersListHeaderOffset(state: com.taskbridge.core.usecases.reminders.RemindersState): Int {
+    var offset = 1
+    if (state.isLoading && state.reminders.isEmpty()) offset += 1
+    if (state.errorMessage != null) offset += 1
+    if (!state.isLoading && state.reminders.isEmpty()) offset += 1
+    return offset
 }
 
 @Composable
@@ -142,10 +214,27 @@ private fun EmptyRemindersState() {
 @Composable
 private fun ReminderCard(
     reminder: Reminder,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    isHighlighted: Boolean,
+    highlightAlpha: Float
 ) {
     Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isHighlighted) {
+                androidx.compose.ui.graphics.lerp(
+                    MaterialTheme.colorScheme.surface,
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.16f * highlightAlpha),
+                    highlightAlpha
+                )
+            } else {
+                MaterialTheme.colorScheme.surface
+            }
+        ),
+        border = if (isHighlighted) {
+            BorderStroke(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.75f * highlightAlpha))
+        } else {
+            null
+        },
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(

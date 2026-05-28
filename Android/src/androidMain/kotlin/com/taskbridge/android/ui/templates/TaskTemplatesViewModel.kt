@@ -2,10 +2,8 @@ package com.taskbridge.android.ui.templates
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.taskbridge.android.repository.NavigationRepository
 import com.taskbridge.android.repository.TaskTemplatesRepository
 import com.taskbridge.android.repository.TasksRepository
-import com.taskbridge.core.models.navigation.AppTab
 import com.taskbridge.core.models.templates.TaskTemplatesState
 import com.taskbridge.core.models.templates.TaskTemplate
 import com.taskbridge.core.models.templates.TemplateTaskItem
@@ -22,8 +20,7 @@ import kotlinx.coroutines.launch
 
 class TaskTemplatesViewModel(
     private val repository: TaskTemplatesRepository,
-    private val tasksRepository: TasksRepository,
-    private val navigationRepository: NavigationRepository
+    private val tasksRepository: TasksRepository
 ) : ViewModel() {
 
     val state: StateFlow<TaskTemplatesState> = repository.templatesState
@@ -62,8 +59,6 @@ class TaskTemplatesViewModel(
         viewModelScope.launch {
             runCatching {
                 tasksRepository.createTask(template.rootTask.toTaskItem(parentId = null, titleOverride = trimmedTitle))
-                navigationRepository.pullToRoot(AppTab.TASKS)
-                navigationRepository.selectTab(AppTab.TASKS)
             }
         }
     }

@@ -1,7 +1,11 @@
 package com.taskbridge.android.ui.navigation
 
 import androidx.compose.runtime.*
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.taskbridge.android.repository.NavigationRepository
+import com.taskbridge.android.repository.MessagesRepository
 import com.taskbridge.android.repository.RemindersRepository
 import com.taskbridge.android.repository.TaskTemplatesRepository
 import com.taskbridge.android.repository.TasksRepository
@@ -10,6 +14,7 @@ import com.taskbridge.android.ui.screens.reminders.RemindersRootScreen
 import com.taskbridge.android.ui.screens.tasks.TaskDetailsScreen
 import com.taskbridge.android.ui.screens.tasks.TasksRootScreen
 import com.taskbridge.android.ui.screens.templates.TemplatesRootScreen
+import com.taskbridge.android.ui.templates.TaskTemplatesViewModel
 import com.taskbridge.core.models.navigation.NavigationDestination
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
@@ -18,7 +23,8 @@ import kotlinx.coroutines.flow.map
 fun TasksNavigationScreen(
     navigationRepository: NavigationRepository,
     tasksRepository: TasksRepository,
-    remindersRepository: RemindersRepository
+    remindersRepository: RemindersRepository,
+    messagesRepository: MessagesRepository
 ) {
     val currentDestination by remember(navigationRepository) {
         navigationRepository.activePath
@@ -26,8 +32,7 @@ fun TasksNavigationScreen(
             .map { path -> path?.current }
     }.collectAsState(initial = NavigationDestination.TasksRoot)
 
-    val scope = rememberCoroutineScope()
-    DestinationMapper(currentDestination, null, tasksRepository, remindersRepository, navigationRepository, scope)
+    DestinationMapper(currentDestination, null, tasksRepository, remindersRepository, messagesRepository, navigationRepository)
 }
 
 @Composable
@@ -36,20 +41,28 @@ fun TemplatesNavigationScreen(
     templatesRepository: TaskTemplatesRepository,
     tasksRepository: TasksRepository
 ) {
+    val templatesViewModel: TaskTemplatesViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                @Suppress("UNCHECKED_CAST")
+                return TaskTemplatesViewModel(templatesRepository, tasksRepository) as T
+            }
+        }
+    )
     val currentDestination by remember(navigationRepository) {
         navigationRepository.activePath
             .filter { path -> path?.root is NavigationDestination.TemplatesRoot }
             .map { path -> path?.current }
     }.collectAsState(initial = NavigationDestination.TemplatesRoot)
 
-    val scope = rememberCoroutineScope()
-    DestinationMapper(currentDestination, templatesRepository, tasksRepository, null, navigationRepository, scope)
+    DestinationMapper(currentDestination, templatesViewModel, null, null, null, navigationRepository)
 }
 
 @Composable
 fun RemindersNavigationScreen(
     navigationRepository: NavigationRepository,
-    remindersRepository: RemindersRepository
+    remindersRepository: RemindersRepository,
+    messagesRepository: MessagesRepository
 ) {
     val currentDestination by remember(navigationRepository) {
         navigationRepository.activePath
@@ -57,38 +70,37 @@ fun RemindersNavigationScreen(
             .map { path -> path?.current }
     }.collectAsState(initial = NavigationDestination.RemindersRoot)
 
-    val scope = rememberCoroutineScope()
-    DestinationMapper(currentDestination, null, null, remindersRepository, navigationRepository, scope)
+    DestinationMapper(currentDestination, null, null, remindersRepository, messagesRepository, navigationRepository)
 }
 
 @Composable
 private fun DestinationMapper(
     destination: NavigationDestination?,
-    templatesRepository: TaskTemplatesRepository?,
+    templatesViewModel: TaskTemplatesViewModel?,
     tasksRepository: TasksRepository?,
     remindersRepository: RemindersRepository?,
-    navigationRepository: NavigationRepository,
-    scope: kotlinx.coroutines.CoroutineScope
+    messagesRepository: MessagesRepository?,
+    navigationRepository: NavigationRepository
 ) {
     when (destination) {
         is NavigationDestination.TasksRoot -> {
-            if (tasksRepository != null && remindersRepository != null) {
-                TasksRootScreen(tasksRepository, remindersRepository, navigationRepository, scope)
+            if (tasksRepository != null && remindersRepository != null && messagesRepository != null) {
+                TasksRootScreen(tasksRepository, remindersRepository, navigationRepository, messagesRepository)
             }
         }
         is NavigationDestination.TemplatesRoot -> {
-            if (templatesRepository != null && tasksRepository != null) {
-                TemplatesRootScreen(templatesRepository, tasksRepository, navigationRepository)
+            if (templatesViewModel != null) {
+                TemplatesRootScreen(templatesViewModel)
             }
         }
         is NavigationDestination.RemindersRoot -> {
-            if (remindersRepository != null) {
-                RemindersRootScreen(remindersRepository)
+            if (remindersRepository != null && messagesRepository != null) {
+                RemindersRootScreen(remindersRepository, navigationRepository, messagesRepository)
             }
         }
         is NavigationDestination.TaskDetails -> {
-            if (tasksRepository != null && remindersRepository != null) {
-                TaskDetailsScreen(destination.taskId, tasksRepository, remindersRepository, navigationRepository, scope)
+            if (tasksRepository != null && remindersRepository != null && messagesRepository != null) {
+                TaskDetailsScreen(destination.taskId, tasksRepository, remindersRepository, navigationRepository, messagesRepository)
             }
         }
         is NavigationDestination.CreateTask -> CreateTaskScreen(destination.parentTaskId)

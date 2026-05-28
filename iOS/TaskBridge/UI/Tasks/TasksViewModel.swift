@@ -8,19 +8,23 @@ final class TasksViewModel: ObservableObject {
     private let repository: TasksRepository
     private let remindersRepository: RemindersRepository
     private let navigationRepository: NavigationRepository
+    private let messagesRepository: MessagesRepository
     private var observationTask: Task<Void, Never>?
     private var hasLoaded = false
     
     init(
         repository: TasksRepository,
         remindersRepository: RemindersRepository,
-        navigationRepository: NavigationRepository
+        navigationRepository: NavigationRepository,
+        messagesRepository: MessagesRepository
     ) {
         self.repository = repository
         self.remindersRepository = remindersRepository
         self.navigationRepository = navigationRepository
-        observationTask = Task {
+        self.messagesRepository = messagesRepository
+        observationTask = Task { [weak self, repository] in
             for await newState in repository.tasksState {
+                guard let self else { break }
                 self.state = newState
             }
         }
@@ -123,12 +127,45 @@ final class TasksViewModel: ObservableObject {
             do {
                 try await remindersRepository.scheduleReminder(reminder)
                 print("[TaskBridge][iOS][TasksViewModel] reminder scheduled id=\(reminder.id.value)")
-                try? await navigationRepository.pullToRoot(tab: .reminders)
-                try? await navigationRepository.selectTab(tab: .reminders)
             } catch {
                 print("[TaskBridge][iOS][TasksViewModel] reminder schedule failed error=\(error)")
             }
         }
+    }
+
+    func openTaskDetails(_ task: TaskItem) {
+        Task {
+            try? await navigationRepository.pushDestination(NavigationDestinationTaskDetails(taskId: task.taskIdValue))
+        }
+    }
+
+    func popDestination() {
+        Task {
+            try? await navigationRepository.popDestination()
+        }
+    }
+
+    func consumeNavigationDestinationMessage(scopeId: String) async throws -> NavigationDestinationMessage? {
+        try await navigationRepository.consumeNavigationDestinationMessage(scopeId: scopeId)
+    }
+
+    func observeTaskCreatedMessages() -> AsyncStream<AppMessage> {
+        messagesRepository.observe(type: AppMessageKeys.shared.taskAdded)
+    }
+
+    func isCurrentTasksRoot() async throws -> Bool {
+        guard try await navigationRepository.fetchCurrentTab() == .tasks else { return false }
+        let activePath = try await navigationRepository.fetchActivePath()
+        return activePath?.current is NavigationDestinationTasksRoot
+    }
+
+    func isCurrentTaskDetails(taskId: String) async throws -> Bool {
+        guard try await navigationRepository.fetchCurrentTab() == .tasks else { return false }
+        let activePath = try await navigationRepository.fetchActivePath()
+        guard let details = activePath?.current as? NavigationDestinationTaskDetails else {
+            return false
+        }
+        return details.taskId == taskId
     }
     
     private func newTask(title: String, type: TaskType, parentId: TaskId?) -> TaskItem {

@@ -4,79 +4,125 @@ import TaskBridgeCore
 struct TaskDetailsView: View {
     let taskId: String
 
+    @Environment(\.tasksRepository) private var tasksRepository
+    @Environment(\.remindersRepository) private var remindersRepository
+    @Environment(\.navigationRepository) private var navigationRepository
+    @Environment(\.messagesRepository) private var messagesRepository
+
+    var body: some View {
+        if let tasksRepository,
+           let remindersRepository,
+           let navigationRepository,
+           let messagesRepository {
+            TaskDetailsContent(
+                taskId: taskId,
+                tasksRepository: tasksRepository,
+                remindersRepository: remindersRepository,
+                navigationRepository: navigationRepository,
+                messagesRepository: messagesRepository
+            )
+        } else {
+            ProgressView("Initializing...")
+        }
+    }
+}
+
+private struct TaskDetailsContent: View {
+    let taskId: String
+
     @StateObject private var viewModel: TasksViewModel
-    private let navigationRepository: NavigationRepository
 
     @State private var isShowingSubtaskSheet = false
     @State private var taskToRename: TaskItem?
     @State private var taskForReminder: TaskItem?
+    @State private var highlightedTaskId: String?
+    @State private var blinkingTaskId: String?
+    @State private var highlightOpacity = 0.0
 
     init(
         taskId: String,
         tasksRepository: TasksRepository,
         remindersRepository: RemindersRepository,
-        navigationRepository: NavigationRepository
+        navigationRepository: NavigationRepository,
+        messagesRepository: MessagesRepository
     ) {
         self.taskId = taskId
         _viewModel = StateObject(wrappedValue: TasksViewModel(
             repository: tasksRepository,
             remindersRepository: remindersRepository,
-            navigationRepository: navigationRepository
+            navigationRepository: navigationRepository,
+            messagesRepository: messagesRepository
         ))
-        self.navigationRepository = navigationRepository
     }
 
     var body: some View {
         let task = viewModel.state.findTask(id: TaskId(value: taskId))
 
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 12) {
-                header
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 12) {
+                    header
 
-                if viewModel.state.isLoading && task == nil {
-                    ProgressView()
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 48)
-                } else if let task {
-                    detailsCard(task)
+                    if viewModel.state.isLoading && task == nil {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 48)
+                    } else if let task {
+                        detailsCard(task)
 
-                    if task.type == .container {
-                        Button {
-                            isShowingSubtaskSheet = true
-                        } label: {
-                            Label("Add subtask", systemImage: "plus")
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .padding(.top, 4)
+                        if task.type == .container {
+                            Button {
+                                isShowingSubtaskSheet = true
+                            } label: {
+                                Label("Add subtask", systemImage: "plus")
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .padding(.top, 4)
 
-                        if task.children.isEmpty {
-                            Text("No subtasks yet")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                                .padding(.vertical, 16)
-                        } else {
-                            ForEach(task.children, id: \.taskIdValue) { child in
-                                TaskTreeRowsView(
-                                    task: child,
-                                    depth: 0,
-                                    onOpen: openTaskDetails,
-                                    onToggleCheckbox: viewModel.toggleCheckbox,
-                                    onProgressChanged: viewModel.updateProgress,
-                                    onAddReminder: { taskForReminder = $0 },
-                                    onRename: { taskToRename = $0 },
-                                    onDelete: { viewModel.deleteTaskTree(taskId: $0.id) }
-                                )
+                            if task.children.isEmpty {
+                                Text("No subtasks yet")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                    .padding(.vertical, 16)
+                            } else {
+                                ForEach(task.children, id: \.taskIdValue) { child in
+                                    TaskTreeRowsView(
+                                        task: child,
+                                        depth: 0,
+                                        highlightedTaskId: highlightedTaskId,
+                                        highlightOpacity: highlightOpacity,
+                                        onOpen: openTaskDetails,
+                                        onToggleCheckbox: viewModel.toggleCheckbox,
+                                        onProgressChanged: viewModel.updateProgress,
+                                        onAddReminder: { taskForReminder = $0 },
+                                        onRename: { taskToRename = $0 },
+                                        onDelete: { viewModel.deleteTaskTree(taskId: $0.id) }
+                                    )
+                                    .id(child.taskIdValue)
+                                }
                             }
                         }
+                    } else {
+                        Text("Task not found")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 56)
                     }
-                } else {
-                    Text("Task not found")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 56)
+                }
+                .padding(16)
+            }
+            .task {
+                await observeTaskCreatedMessages(scrollProxy: proxy)
+            }
+            .task {
+                await consumePendingNavigationMessage(scrollProxy: proxy)
+            }
+            .onChange(of: task?.children.map(\.taskIdValue) ?? []) { _ in
+                guard let highlightedTaskId else { return }
+                withAnimation(.easeInOut(duration: 0.35)) {
+                    proxy.scrollTo(highlightedTaskId, anchor: .center)
                 }
             }
-            .padding(16)
         }
         .background(Color(.systemGroupedBackground))
         .task {
@@ -122,9 +168,7 @@ struct TaskDetailsView: View {
     private var header: some View {
         HStack(spacing: 12) {
             Button {
-                Task {
-                    try? await navigationRepository.popDestination()
-                }
+                viewModel.popDestination()
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.headline)
@@ -164,9 +208,7 @@ struct TaskDetailsView: View {
 
                 Button(role: .destructive) {
                     viewModel.deleteTaskTree(taskId: task.id)
-                    Task {
-                        try? await navigationRepository.popDestination()
-                    }
+                    viewModel.popDestination()
                 } label: {
                     Image(systemName: "trash")
                 }
@@ -192,8 +234,82 @@ struct TaskDetailsView: View {
     }
 
     private func openTaskDetails(_ task: TaskItem) {
-        Task {
-            try? await navigationRepository.pushDestination(NavigationDestinationTaskDetails(taskId: task.taskIdValue))
+        viewModel.openTaskDetails(task)
+    }
+
+    private func observeTaskCreatedMessages(scrollProxy: ScrollViewProxy) async {
+        for await message in viewModel.observeTaskCreatedMessages() {
+            guard let taskAdded = message as? AppMessageTaskAdded,
+                  taskAdded.parentPath.last?.value == taskId else {
+                continue
+            }
+            guard (try? await viewModel.isCurrentTaskDetails(taskId: taskId)) == true else { continue }
+            await scrollToAndBlink(id: taskAdded.id.value, scrollProxy: scrollProxy)
         }
     }
+
+    private func consumePendingNavigationMessage(scrollProxy: ScrollViewProxy) async {
+        guard let message = try? await viewModel.consumeNavigationDestinationMessage(
+            scopeId: NavigationDestinationMessageScopeId.taskDetails(parentId: taskId).scopeId
+        ),
+              let taskElement = message as? NavigationDestinationMessageTaskElement,
+              taskElement.parentPath.last == taskId else {
+            return
+        }
+
+        await scrollToAndBlink(id: taskElement.taskId, scrollProxy: scrollProxy, presentationDelayNanoseconds: 1_200_000_000)
+    }
+
+    @MainActor
+    private func scrollToAndBlink(
+        id: String,
+        scrollProxy: ScrollViewProxy,
+        presentationDelayNanoseconds: UInt64 = 1_200_000_000
+    ) async {
+        guard blinkingTaskId != id else { return }
+        blinkingTaskId = id
+        defer {
+            if blinkingTaskId == id {
+                blinkingTaskId = nil
+            }
+        }
+
+        guard await waitForTaskRow(id: id) else { return }
+
+        highlightedTaskId = id
+        highlightOpacity = 0.0
+
+        withAnimation(.easeInOut(duration: 0.35)) {
+            scrollProxy.scrollTo(id, anchor: .center)
+        }
+        await uncancellableSleep(nanoseconds: presentationDelayNanoseconds)
+
+        for _ in 0..<2 {
+            withAnimation(.easeInOut(duration: 1.0)) {
+                highlightOpacity = 1.0
+            }
+            await uncancellableSleep(nanoseconds: 1_000_000_000)
+            withAnimation(.easeInOut(duration: 1.0)) {
+                highlightOpacity = 0.0
+            }
+            await uncancellableSleep(nanoseconds: 1_000_000_000)
+        }
+
+        if highlightedTaskId == id {
+            highlightedTaskId = nil
+        }
+    }
+
+    @MainActor
+    private func waitForTaskRow(id: String) async -> Bool {
+        for _ in 0..<40 {
+            let task = viewModel.state.findTask(id: TaskId(value: taskId))
+            if task?.children.contains(where: { $0.taskIdValue == id }) == true {
+                return true
+            }
+            try? await Task.sleep(nanoseconds: 50_000_000)
+        }
+        return false
+    }
+
 }

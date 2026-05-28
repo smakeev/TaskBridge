@@ -36,4 +36,20 @@ class NavigationRepositoryImpl: NavigationRepository {
     func pullToRoot(tab: AppTab) async throws {
         try await interactor.pullToRoot(tab: tab)
     }
+
+    func fetchActivePath() async throws -> NavigationPath? {
+        try await interactor.fetchActivePath()
+    }
+
+    func fetchCurrentTab() async throws -> AppTab {
+        try await interactor.fetchCurrentTab()
+    }
+
+    func setNavigationDestinationMessage(_ message: NavigationDestinationMessage?) async throws {
+        try await interactor.setNavigationDestinationMessage(message: message)
+    }
+
+    func consumeNavigationDestinationMessage(scopeId: String) async throws -> NavigationDestinationMessage? {
+        try await interactor.consumeNavigationDestinationMessage(scopeId: scopeId)
+    }
 }

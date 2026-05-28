@@ -11,6 +11,7 @@
 		0423DF71F1827185B9ECD734 /* RemindersRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66B261D193B0C364A8CA57A4 /* RemindersRootView.swift */; };
 		0776859050028A3FEE77110D /* NavigationContainers.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1C02803533B2D78658ABB95 /* NavigationContainers.swift */; };
 		0B2657459C05185EA86E5B75 /* TasksRepositoryImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1048CC77964A92134A5B65B2 /* TasksRepositoryImpl.swift */; };
+		118AE9A0F846486E8F53BE9D /* NavigationUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = C884BCE931C440F1845887A7 /* NavigationUtils.swift */; };
 		173C2B09580E1AA33E3C2ABA /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA8F2A875CDF1E5AA309B600 /* ContentView.swift */; };
 		30170848BB27FDDCD2D5CDAB /* TaskRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E930B642150759D961AFC198 /* TaskRowView.swift */; };
 		30A9B74EF5CC9A00AB71982C /* TasksRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78D770221C5124D58A59FB5E /* TasksRepository.swift */; };
@@ -74,6 +75,7 @@
 		AC581B55731E5987A96B89B6 /* ToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastView.swift; sourceTree = "<group>"; };
 		B4D7375A1C9327D972806DEA /* TaskTemplatesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskTemplatesViewModel.swift; sourceTree = "<group>"; };
 		BC958C61ACC1F61BBA16A140 /* TaskDetailsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskDetailsView.swift; sourceTree = "<group>"; };
+		C884BCE931C440F1845887A7 /* NavigationUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationUtils.swift; sourceTree = "<group>"; };
 		CFD7806351D8DB097F97F0B0 /* ToastPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastPresenter.swift; sourceTree = "<group>"; };
 		D89970E7DAE2C573959AE83F /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
 		DD776836A7AF68FE1BE1316E /* NavigationRepositoryImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationRepositoryImpl.swift; sourceTree = "<group>"; };
@@ -91,6 +93,7 @@
 			children = (
 				1B97E63E00F5973C853BA16A /* .gitkeep */,
 				90260F7840C4003D46EAD242 /* FlowUtils.swift */,
+				C884BCE931C440F1845887A7 /* NavigationUtils.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -362,6 +365,7 @@
 				0776859050028A3FEE77110D /* NavigationContainers.swift in Sources */,
 				A7F34EC45AE2645D00C047AF /* NavigationRepository.swift in Sources */,
 				40211259DF891C250656FF1A /* NavigationRepositoryImpl.swift in Sources */,
+				118AE9A0F846486E8F53BE9D /* NavigationUtils.swift in Sources */,
 				33E18F05B30C5599EFC4C692 /* ReminderDetailsView.swift in Sources */,
 				C87389D7316AE4B457E31AF5 /* RemindersRepository.swift in Sources */,
 				EBDFA0FDC447D62C55E13295 /* RemindersRepositoryImpl.swift in Sources */,

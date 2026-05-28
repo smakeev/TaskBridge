@@ -3,9 +3,6 @@ import TaskBridgeCore
 
 struct ContentView: View {
     @Environment(\.navigationRepository) private var navigationRepository
-    @Environment(\.taskTemplatesRepository) private var templatesRepository
-    @Environment(\.tasksRepository) private var tasksRepository
-    @Environment(\.remindersRepository) private var remindersRepository
     @Environment(\.messagesRepository) private var messagesRepository
     @State private var selectedTab: AppTab = .tasks
     @StateObject private var toastPresenter = ToastPresenter()
@@ -13,35 +10,21 @@ struct ContentView: View {
     var body: some View {
         Group {
             if let navRepo = navigationRepository,
-               let templatesRepo = templatesRepository,
-               let tasksRepo = tasksRepository,
-               let remindersRepo = remindersRepository,
                let messagesRepo = messagesRepository {
                 TabView(selection: $selectedTab) {
-                    TasksNavigationView(
-                        navigationRepository: navRepo,
-                        tasksRepository: tasksRepo,
-                        remindersRepository: remindersRepo
-                    )
+                    TasksNavigationView()
                         .tabItem {
                             Image(systemName: getSFSymbol(for: AppTab.tasks.iconKey))
                         }
                         .tag(AppTab.tasks)
                     
-                    TemplatesNavigationView(
-                        navigationRepository: navRepo,
-                        templatesRepository: templatesRepo,
-                        tasksRepository: tasksRepo
-                    )
+                    TemplatesNavigationView()
                         .tabItem {
                             Image(systemName: getSFSymbol(for: AppTab.templates.iconKey))
                         }
                         .tag(AppTab.templates)
                     
-                    RemindersNavigationView(
-                        navigationRepository: navRepo,
-                        remindersRepository: remindersRepo
-                    )
+                    RemindersNavigationView()
                         .tabItem {
                             Image(systemName: getSFSymbol(for: AppTab.reminders.iconKey))
                         }
@@ -71,6 +54,7 @@ struct ContentView: View {
                             if let toastable = message as? Toastable {
                                 showToast(for: toastable)
                             }
+                            handleNavigationMessage(message, navigationRepository: navRepo)
                         }
                     }
             } else {
@@ -90,5 +74,42 @@ struct ContentView: View {
 
     private func showToast(for toastable: Toastable) {
         toastPresenter.show(toastable.text)
+    }
+
+    private func handleNavigationMessage(
+        _ message: AppMessage,
+        navigationRepository: NavigationRepository
+    ) {
+        Task {
+            if let reminderCreated = message as? AppMessageReminderCreated {
+                if (try? await navigationRepository.isCurrentRoot(tab: .reminders)) == true {
+                    return
+                }
+                try? await navigationRepository.setNavigationDestinationMessage(
+                    NavigationDestinationMessageElementId(
+                        value: reminderCreated.id.value,
+                        scopeId: NavigationDestinationMessageScopeId.remindersRoot.scopeId
+                    )
+                )
+                try? await navigationRepository.pullToRoot(tab: .reminders)
+                try? await navigationRepository.selectTab(tab: .reminders)
+            } else if let taskAdded = message as? AppMessageTaskAdded {
+                if (try? await navigationRepository.fetchCurrentTab()) == .tasks {
+                    return
+                }
+                let parentPath = taskAdded.parentPath.map { $0.value }
+                // For now tasks can only be added outside the Tasks tab as root tasks.
+                // Later, if subtasks can be created from other tabs, use parentPath to rebuild the full stack.
+                try? await navigationRepository.setNavigationDestinationMessage(
+                    NavigationDestinationMessageTaskElement(
+                        taskId: taskAdded.id.value,
+                        parentPath: parentPath,
+                        scopeId: NavigationDestinationMessageScopeId.tasksRoot.scopeId
+                    )
+                )
+                try? await navigationRepository.pullToRoot(tab: .tasks)
+                try? await navigationRepository.selectTab(tab: .tasks)
+            }
+        }
     }
 }

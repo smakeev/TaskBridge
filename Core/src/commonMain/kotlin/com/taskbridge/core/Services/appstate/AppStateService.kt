@@ -41,6 +41,11 @@ internal class AppStateService(
                     )
                 }
             }
+            is AppStateCommand.SetNavigationDestinationMessage -> {
+                updateState { currentData ->
+                    currentData.copy(navigationDestinationMessage = command.message)
+                }
+            }
         }
     }
 

@@ -19,6 +19,12 @@ internal class UserStoriesContainer {
 
     fun pullToRoot(assembler: CoreAssembler): PullToRootStory = PullToRootStory(assembler)
 
+    fun setNavigationDestinationMessage(assembler: CoreAssembler): SetNavigationDestinationMessageStory =
+        SetNavigationDestinationMessageStory(assembler)
+
+    fun fetchNavigationDestinationMessage(assembler: CoreAssembler): FetchNavigationDestinationMessageStory =
+        FetchNavigationDestinationMessageStory(assembler)
+
     fun getAppStateService(assembler: CoreAssembler): GetAppStateServiceStory = GetAppStateServiceStory(assembler)
 
     fun subscribeToNavigation(assembler: CoreAssembler): SubscribeToNavigationStory = SubscribeToNavigationStory(assembler)

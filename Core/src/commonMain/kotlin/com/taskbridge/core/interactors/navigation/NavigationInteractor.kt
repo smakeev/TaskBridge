@@ -2,6 +2,7 @@ package com.taskbridge.core.interactors.navigation
 
 import com.taskbridge.core.models.navigation.AppTab
 import com.taskbridge.core.models.navigation.NavigationDestination
+import com.taskbridge.core.models.navigation.NavigationDestinationMessage
 import com.taskbridge.core.models.navigation.NavigationOverlay
 import com.taskbridge.core.models.navigation.NavigationPath
 import com.taskbridge.core.usecases.NavigationStateObserverUseCase
@@ -36,6 +37,16 @@ public class NavigationInteractor(
 
     public suspend fun pullToRoot(tab: AppTab) {
         pushNavigationUseCase.pullToRoot(tab)
+    }
+
+    public suspend fun setNavigationDestinationMessage(message: NavigationDestinationMessage?) {
+        pushNavigationUseCase.setNavigationDestinationMessage(message)
+    }
+
+    public suspend fun consumeNavigationDestinationMessage(
+        scopeId: String
+    ): NavigationDestinationMessage? {
+        return pushNavigationUseCase.consumeNavigationDestinationMessage(scopeId)
     }
 
     public suspend fun fetchActivePath(): NavigationPath? {

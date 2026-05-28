@@ -87,6 +87,7 @@ public class MessagesInteractor internal constructor(
         // TODO: Use the upcoming LocalizationHandler to return localized platform-ready text.
         return AppMessage.TaskAdded(
             id = task.id,
+            parentPath = parentPath,
             text = "Task added: ${task.title}"
         )
     }

@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.lifecycleScope
 import com.taskbridge.android.handlers.reminders.AndroidReminderHandler
 import com.taskbridge.android.repository.MessagesRepository
+import com.taskbridge.android.repository.NavigationDestinationMessageScopeId
 import com.taskbridge.android.repository.NavigationRepository
 import com.taskbridge.android.repository.RemindersRepository
 import com.taskbridge.android.repository.TaskTemplatesRepository
@@ -29,11 +30,13 @@ import com.taskbridge.android.repository.impl.TasksRepositoryImpl
 import com.taskbridge.android.ui.navigation.RemindersNavigationScreen
 import com.taskbridge.android.ui.navigation.TasksNavigationScreen
 import com.taskbridge.android.ui.navigation.TemplatesNavigationScreen
+import com.taskbridge.android.utils.isCurrentRoot
 import com.taskbridge.core.TaskBridge
 import com.taskbridge.core.handlers.CorePlatformHandlers
 import com.taskbridge.core.models.messages.AppMessageKeys
 import com.taskbridge.core.models.messages.Toastable
 import com.taskbridge.core.models.navigation.AppTab
+import com.taskbridge.core.models.navigation.NavigationDestinationMessage
 import com.taskbridge.core.storage.tasks.PlatformDependencies
 import kotlinx.coroutines.launch
 
@@ -72,7 +75,41 @@ class MainActivity : ComponentActivity() {
                     )
                 ).collect { message ->
                     (message as? Toastable)?.let { toastable ->
-                        snackbarHostState.showSnackbar(toastable.text)
+                        scope.launch {
+                            snackbarHostState.showSnackbar(toastable.text)
+                        }
+                    }
+                    when (message) {
+                        is com.taskbridge.core.models.messages.AppMessage.ReminderCreated -> {
+                            if (navigationRepository.isCurrentRoot(AppTab.REMINDERS)) {
+                                return@collect
+                            }
+                            navigationRepository.setNavigationDestinationMessage(
+                                NavigationDestinationMessage.ElementId(
+                                    value = message.id.value,
+                                    scopeId = NavigationDestinationMessageScopeId.RemindersRoot.scopeId
+                                )
+                            )
+                            navigationRepository.pullToRoot(AppTab.REMINDERS)
+                            navigationRepository.selectTab(AppTab.REMINDERS)
+                        }
+                        is com.taskbridge.core.models.messages.AppMessage.TaskAdded -> {
+                            if (navigationRepository.fetchCurrentTab() == AppTab.TASKS) {
+                                return@collect
+                            }
+                            val parentPath = message.parentPath.map { taskId -> taskId.value }
+                            // For now tasks can only be added outside the Tasks tab as root tasks.
+                            // Later, if subtasks can be created from other tabs, use parentPath to rebuild the full stack.
+                            navigationRepository.setNavigationDestinationMessage(
+                                NavigationDestinationMessage.TaskElement(
+                                    taskId = message.id.value,
+                                    parentPath = parentPath,
+                                    scopeId = NavigationDestinationMessageScopeId.TasksRoot.scopeId
+                                )
+                            )
+                            navigationRepository.pullToRoot(AppTab.TASKS)
+                            navigationRepository.selectTab(AppTab.TASKS)
+                        }
                     }
                 }
             }
@@ -112,7 +149,8 @@ class MainActivity : ComponentActivity() {
                             AppTab.TASKS -> TasksNavigationScreen(
                                 navigationRepository = navigationRepository,
                                 tasksRepository = tasksRepository,
-                                remindersRepository = remindersRepository
+                                remindersRepository = remindersRepository,
+                                messagesRepository = messagesRepository
                             )
                             AppTab.TEMPLATES -> TemplatesNavigationScreen(
                                 navigationRepository = navigationRepository,
@@ -121,7 +159,8 @@ class MainActivity : ComponentActivity() {
                             )
                             AppTab.REMINDERS -> RemindersNavigationScreen(
                                 navigationRepository = navigationRepository,
-                                remindersRepository = remindersRepository
+                                remindersRepository = remindersRepository,
+                                messagesRepository = messagesRepository
                             )
                         }
                     }

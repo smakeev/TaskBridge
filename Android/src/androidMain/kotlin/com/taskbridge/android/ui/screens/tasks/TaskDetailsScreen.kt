@@ -1,5 +1,7 @@
 package com.taskbridge.android.ui.screens.tasks
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -32,6 +35,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,14 +44,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.taskbridge.android.repository.NavigationRepository
+import com.taskbridge.android.repository.MessagesRepository
+import com.taskbridge.android.repository.NavigationDestinationMessageScopeId
 import com.taskbridge.android.repository.RemindersRepository
 import com.taskbridge.android.repository.TasksRepository
 import com.taskbridge.android.ui.tasks.TasksViewModel
-import com.taskbridge.core.models.navigation.NavigationDestination
+import com.taskbridge.core.models.messages.AppMessage
+import com.taskbridge.core.models.navigation.NavigationDestinationMessage
 import com.taskbridge.core.models.tasks.TaskItem
 import com.taskbridge.core.models.tasks.TaskType
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 @Composable
 fun TaskDetailsScreen(
@@ -55,24 +61,73 @@ fun TaskDetailsScreen(
     tasksRepository: TasksRepository,
     remindersRepository: RemindersRepository,
     navigationRepository: NavigationRepository,
-    scope: CoroutineScope
+    messagesRepository: MessagesRepository
 ) {
     val viewModel: TasksViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 @Suppress("UNCHECKED_CAST")
-                return TasksViewModel(tasksRepository, remindersRepository, navigationRepository) as T
+                return TasksViewModel(
+                    tasksRepository,
+                    remindersRepository,
+                    navigationRepository,
+                    messagesRepository
+                ) as T
             }
         }
     )
     val state by viewModel.state.collectAsState()
     val task = state.findTask(com.taskbridge.core.models.tasks.TaskId(taskId))
+    val currentTask by rememberUpdatedState(task)
     var showSubtaskDialog by remember { mutableStateOf(false) }
     var taskToRename by remember { mutableStateOf<TaskItem?>(null) }
     var taskForReminder by remember { mutableStateOf<TaskItem?>(null) }
+    var highlightedTaskId by remember { mutableStateOf<String?>(null) }
+    val highlightAlpha = remember { Animatable(0f) }
+    val listState = rememberLazyListState()
+
+    suspend fun scrollToAndBlink(childTaskId: String) {
+        // The subtask may not be in the parent's children yet when this fires from a
+        // cross-tab navigation (the StateFlow is WhileSubscribed(5000) and needs a moment
+        // to deliver the latest snapshot to the freshly-mounted screen). Wait briefly.
+        var waited = 0
+        while (waited < 2000 && currentTask?.children?.none { it.id.value == childTaskId } != false) {
+            delay(50)
+            waited += 50
+        }
+        val childIndex = currentTask?.children?.indexOfFirst { child -> child.id.value == childTaskId } ?: -1
+        if (childIndex < 0) return
+
+        highlightedTaskId = childTaskId
+        listState.animateScrollToItem(childIndex + taskDetailsChildrenOffset)
+        repeat(2) {
+            highlightAlpha.animateTo(1f, animationSpec = tween(durationMillis = 1000))
+            highlightAlpha.animateTo(0f, animationSpec = tween(durationMillis = 1000))
+        }
+        if (highlightedTaskId == childTaskId) {
+            highlightedTaskId = null
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.loadTasks()
+    }
+
+    LaunchedEffect(viewModel, taskId) {
+        viewModel.observeTaskCreatedMessages().collect { message ->
+            val taskAdded = message as? AppMessage.TaskAdded ?: return@collect
+            if (taskAdded.parentPath.lastOrNull()?.value != taskId) return@collect
+            scrollToAndBlink(taskAdded.id.value)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        val message = viewModel.consumeNavigationDestinationMessage(
+            NavigationDestinationMessageScopeId.TaskDetails(taskId).scopeId
+        )
+        val taskMessage = message as? NavigationDestinationMessage.TaskElement ?: return@LaunchedEffect
+        if (taskMessage.parentPath.lastOrNull() != taskId) return@LaunchedEffect
+        scrollToAndBlink(taskMessage.taskId)
     }
 
     Scaffold(
@@ -83,7 +138,7 @@ fun TaskDetailsScreen(
                     .padding(horizontal = 8.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = { scope.launch { navigationRepository.popDestination() } }) {
+                IconButton(onClick = viewModel::popDestination) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                 }
                 Text(text = "Task details", style = MaterialTheme.typography.titleLarge)
@@ -110,6 +165,7 @@ fun TaskDetailsScreen(
             }
         } else {
             LazyColumn(
+                state = listState,
                 modifier = Modifier
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
@@ -142,7 +198,7 @@ fun TaskDetailsScreen(
                             }
                             IconButton(onClick = {
                                 viewModel.deleteTaskTree(task.id)
-                                scope.launch { navigationRepository.popDestination() }
+                                viewModel.popDestination()
                             }) {
                                 Icon(Icons.Default.Delete, contentDescription = "Delete")
                             }
@@ -190,16 +246,14 @@ fun TaskDetailsScreen(
                                 TaskTreeRows(
                                     task = child,
                                     depth = 0,
-                                    onOpenTask = {
-                                        scope.launch {
-                                            navigationRepository.pushDestination(NavigationDestination.TaskDetails(it.id.value))
-                                        }
-                                    },
+                                    onOpenTask = viewModel::openTaskDetails,
                                     onToggleCheckbox = viewModel::toggleCheckbox,
                                     onProgressChanged = viewModel::updateProgress,
                                     onAddReminder = { taskForReminder = it },
                                     onRename = { taskToRename = it },
-                                    onDelete = { viewModel.deleteTaskTree(it.id) }
+                                    onDelete = { viewModel.deleteTaskTree(it.id) },
+                                    highlightedTaskId = highlightedTaskId,
+                                    highlightAlpha = highlightAlpha.value
                                 )
                             }
                         }
@@ -246,3 +300,5 @@ fun TaskDetailsScreen(
         )
     }
 }
+
+private const val taskDetailsChildrenOffset = 2
