@@ -2,7 +2,7 @@ import Foundation
 import TaskBridgeCore
 
 @MainActor
-protocol MessagesRepository {
+protocol MessagesRepository: AnyObject {
     func observeAll() -> AsyncStream<AppMessage>
     func observe(types: [AppMessageKey]) -> AsyncStream<AppMessage>
     func observe(type: AppMessageKey) -> AsyncStream<AppMessage>

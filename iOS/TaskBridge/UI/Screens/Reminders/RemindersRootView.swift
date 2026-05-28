@@ -2,18 +2,14 @@ import SwiftUI
 import TaskBridgeCore
 
 struct RemindersRootView: View {
-    @Environment(\.remindersRepository) private var remindersRepository
-    @Environment(\.navigationRepository) private var navigationRepository
-    @Environment(\.messagesRepository) private var messagesRepository
+    @Environment(\.repositoriesStorage) private var repositoriesStorage
 
     var body: some View {
-        if let remindersRepository,
-           let navigationRepository,
-           let messagesRepository {
+        if let repositoriesStorage {
             RemindersRootContent(
-                repository: remindersRepository,
-                navigationRepository: navigationRepository,
-                messagesRepository: messagesRepository
+                repository: repositoriesStorage.remindersRepository,
+                navigationRepository: repositoriesStorage.navigationRepository,
+                messagesRepository: repositoriesStorage.messagesRepository
             )
         } else {
             ProgressView("Initializing...")

@@ -2,9 +2,10 @@ import SwiftUI
 import TaskBridgeCore
 
 struct ContentView: View {
-    @Environment(\.navigationRepository) private var navigationRepository
-    @Environment(\.messagesRepository) private var messagesRepository
+    @Environment(\.repositoriesStorage) private var repositoriesStorage
     @State private var selectedTab: AppTab = .tasks
+    @State private var navigationRepository: NavigationRepository?
+    @State private var messagesRepository: MessagesRepository?
     @StateObject private var toastPresenter = ToastPresenter()
     
     var body: some View {
@@ -59,6 +60,12 @@ struct ContentView: View {
                     }
             } else {
                 ProgressView("Initializing...")
+            }
+        }
+        .task {
+            if navigationRepository == nil || messagesRepository == nil {
+                navigationRepository = repositoriesStorage?.navigationRepository
+                messagesRepository = repositoriesStorage?.messagesRepository
             }
         }
     }

@@ -16,17 +16,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.lifecycleScope
 import com.taskbridge.android.handlers.reminders.AndroidReminderHandler
-import com.taskbridge.android.repository.MessagesRepository
 import com.taskbridge.android.repository.NavigationDestinationMessageScopeId
-import com.taskbridge.android.repository.NavigationRepository
-import com.taskbridge.android.repository.RemindersRepository
-import com.taskbridge.android.repository.TaskTemplatesRepository
-import com.taskbridge.android.repository.TasksRepository
-import com.taskbridge.android.repository.impl.MessagesRepositoryImpl
-import com.taskbridge.android.repository.impl.NavigationRepositoryImpl
-import com.taskbridge.android.repository.impl.RemindersRepositoryImpl
-import com.taskbridge.android.repository.impl.TaskTemplatesRepositoryImpl
-import com.taskbridge.android.repository.impl.TasksRepositoryImpl
+import com.taskbridge.android.repository.RepositoriesStorage
+import com.taskbridge.android.ui.LocalRepositoriesStorage
 import com.taskbridge.android.ui.navigation.RemindersNavigationScreen
 import com.taskbridge.android.ui.navigation.TasksNavigationScreen
 import com.taskbridge.android.ui.navigation.TemplatesNavigationScreen
@@ -49,119 +41,103 @@ class MainActivity : ComponentActivity() {
             reminderHandler = AndroidReminderHandler(this)
         )
         val taskBridge = TaskBridge(platformDependencies, platformHandlers)
-        
-        val navigationInteractor = taskBridge.navigationInteractor()
-        val templatesInteractor = taskBridge.templatesInteractor()
-        val tasksInteractor = taskBridge.tasksInteractor()
-        val remindersInteractor = taskBridge.remindersInteractor()
-        val messagesInteractor = taskBridge.messagesInteractor()
-        
-        val navigationRepository: NavigationRepository = NavigationRepositoryImpl(navigationInteractor)
-        val templatesRepository: TaskTemplatesRepository = TaskTemplatesRepositoryImpl(templatesInteractor)
-        val tasksRepository: TasksRepository = TasksRepositoryImpl(tasksInteractor)
-        val remindersRepository: RemindersRepository = RemindersRepositoryImpl(remindersInteractor, lifecycleScope)
-        val messagesRepository: MessagesRepository = MessagesRepositoryImpl(messagesInteractor)
+        val repositoriesStorage = RepositoriesStorage(taskBridge, lifecycleScope)
 
         setContent {
             val scope = rememberCoroutineScope()
             val snackbarHostState = remember { SnackbarHostState() }
-            val currentTab by navigationRepository.currentTab.collectAsState(initial = AppTab.TASKS)
+            CompositionLocalProvider(LocalRepositoriesStorage provides repositoriesStorage) {
+                val navigationRepository = remember(repositoriesStorage) {
+                    repositoriesStorage.navigationRepository()
+                }
+                val messagesRepository = remember(repositoriesStorage) {
+                    repositoriesStorage.messagesRepository()
+                }
+                val currentTab by navigationRepository.currentTab.collectAsState(initial = AppTab.TASKS)
 
-            LaunchedEffect(messagesRepository, snackbarHostState) {
-                messagesRepository.observe(
-                    listOf(
-                        AppMessageKeys.reminderCreated,
-                        AppMessageKeys.taskAdded
-                    )
-                ).collect { message ->
-                    (message as? Toastable)?.let { toastable ->
-                        scope.launch {
-                            snackbarHostState.showSnackbar(toastable.text)
-                        }
-                    }
-                    when (message) {
-                        is com.taskbridge.core.models.messages.AppMessage.ReminderCreated -> {
-                            if (navigationRepository.isCurrentRoot(AppTab.REMINDERS)) {
-                                return@collect
+                LaunchedEffect(messagesRepository, snackbarHostState) {
+                    messagesRepository.observe(
+                        listOf(
+                            AppMessageKeys.reminderCreated,
+                            AppMessageKeys.taskAdded
+                        )
+                    ).collect { message ->
+                        (message as? Toastable)?.let { toastable ->
+                            scope.launch {
+                                snackbarHostState.showSnackbar(toastable.text)
                             }
-                            navigationRepository.setNavigationDestinationMessage(
-                                NavigationDestinationMessage.ElementId(
-                                    value = message.id.value,
-                                    scopeId = NavigationDestinationMessageScopeId.RemindersRoot.scopeId
-                                )
-                            )
-                            navigationRepository.pullToRoot(AppTab.REMINDERS)
-                            navigationRepository.selectTab(AppTab.REMINDERS)
                         }
-                        is com.taskbridge.core.models.messages.AppMessage.TaskAdded -> {
-                            if (navigationRepository.fetchCurrentTab() == AppTab.TASKS) {
-                                return@collect
-                            }
-                            val parentPath = message.parentPath.map { taskId -> taskId.value }
-                            // For now tasks can only be added outside the Tasks tab as root tasks.
-                            // Later, if subtasks can be created from other tabs, use parentPath to rebuild the full stack.
-                            navigationRepository.setNavigationDestinationMessage(
-                                NavigationDestinationMessage.TaskElement(
-                                    taskId = message.id.value,
-                                    parentPath = parentPath,
-                                    scopeId = NavigationDestinationMessageScopeId.TasksRoot.scopeId
+                        when (message) {
+                            is com.taskbridge.core.models.messages.AppMessage.ReminderCreated -> {
+                                if (navigationRepository.isCurrentRoot(AppTab.REMINDERS)) {
+                                    return@collect
+                                }
+                                navigationRepository.setNavigationDestinationMessage(
+                                    NavigationDestinationMessage.ElementId(
+                                        value = message.id.value,
+                                        scopeId = NavigationDestinationMessageScopeId.RemindersRoot.scopeId
+                                    )
                                 )
-                            )
-                            navigationRepository.pullToRoot(AppTab.TASKS)
-                            navigationRepository.selectTab(AppTab.TASKS)
+                                navigationRepository.pullToRoot(AppTab.REMINDERS)
+                                navigationRepository.selectTab(AppTab.REMINDERS)
+                            }
+                            is com.taskbridge.core.models.messages.AppMessage.TaskAdded -> {
+                                if (navigationRepository.fetchCurrentTab() == AppTab.TASKS) {
+                                    return@collect
+                                }
+                                val parentPath = message.parentPath.map { taskId -> taskId.value }
+                                // For now tasks can only be added outside the Tasks tab as root tasks.
+                                // Later, if subtasks can be created from other tabs, use parentPath to rebuild the full stack.
+                                navigationRepository.setNavigationDestinationMessage(
+                                    NavigationDestinationMessage.TaskElement(
+                                        taskId = message.id.value,
+                                        parentPath = parentPath,
+                                        scopeId = NavigationDestinationMessageScopeId.TasksRoot.scopeId
+                                    )
+                                )
+                                navigationRepository.pullToRoot(AppTab.TASKS)
+                                navigationRepository.selectTab(AppTab.TASKS)
+                            }
                         }
                     }
                 }
-            }
 
-            MaterialTheme {
-                Scaffold(
-                    snackbarHost = {
-                        SnackbarHost(hostState = snackbarHostState)
-                    },
-                    bottomBar = {
-                        NavigationBar {
-                            AppTab.entries.forEach { tab ->
-                                NavigationBarItem(
-                                    selected = currentTab == tab,
-                                    onClick = {
-                                        scope.launch {
-                                            navigationRepository.selectTab(tab)
+                MaterialTheme {
+                    Scaffold(
+                        snackbarHost = {
+                            SnackbarHost(hostState = snackbarHostState)
+                        },
+                        bottomBar = {
+                            NavigationBar {
+                                AppTab.entries.forEach { tab ->
+                                    NavigationBarItem(
+                                        selected = currentTab == tab,
+                                        onClick = {
+                                            scope.launch {
+                                                navigationRepository.selectTab(tab)
+                                            }
+                                        },
+                                        icon = {
+                                            Icon(
+                                                imageVector = getIconForTab(tab),
+                                                contentDescription = tab.titleKey
+                                            )
                                         }
-                                    },
-                                    icon = {
-                                        Icon(
-                                            imageVector = getIconForTab(tab),
-                                            contentDescription = tab.titleKey
-                                        )
-                                    }
-                                )
+                                    )
+                                }
                             }
                         }
-                    }
-                ) { paddingValues ->
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(paddingValues)
-                    ) {
-                        when (currentTab) {
-                            AppTab.TASKS -> TasksNavigationScreen(
-                                navigationRepository = navigationRepository,
-                                tasksRepository = tasksRepository,
-                                remindersRepository = remindersRepository,
-                                messagesRepository = messagesRepository
-                            )
-                            AppTab.TEMPLATES -> TemplatesNavigationScreen(
-                                navigationRepository = navigationRepository,
-                                templatesRepository = templatesRepository,
-                                tasksRepository = tasksRepository
-                            )
-                            AppTab.REMINDERS -> RemindersNavigationScreen(
-                                navigationRepository = navigationRepository,
-                                remindersRepository = remindersRepository,
-                                messagesRepository = messagesRepository
-                            )
+                    ) { paddingValues ->
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(paddingValues)
+                        ) {
+                            when (currentTab) {
+                                AppTab.TASKS -> TasksNavigationScreen()
+                                AppTab.TEMPLATES -> TemplatesNavigationScreen()
+                                AppTab.REMINDERS -> RemindersNavigationScreen()
+                            }
                         }
                     }
                 }

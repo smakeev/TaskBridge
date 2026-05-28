@@ -25,6 +25,8 @@ internal class RemindersService(
     initialData = RemindersServiceData(),
     scope = scope
 ) {
+    private var hasCompletedInitialSync = false
+
     init {
         // Subscribe to incoming reminder events from the platform (or internal sync)
         scope.launch {
@@ -32,10 +34,14 @@ internal class RemindersService(
                 when (event) {
                     is ReminderEvent.RemindersUpdated -> {
                         println("[TaskBridge][Core][RemindersService] event RemindersUpdated count=${event.reminders.size}")
-                        publishNewReminderMessages(
-                            previousReminders = data.value.reminders,
-                            updatedReminders = event.reminders
-                        )
+                        if (hasCompletedInitialSync) {
+                            publishNewReminderMessages(
+                                previousReminders = data.value.reminders,
+                                updatedReminders = event.reminders
+                            )
+                        } else {
+                            hasCompletedInitialSync = true
+                        }
                         updateState { it.copy(
                             reminders = event.reminders,
                             isLoading = false,

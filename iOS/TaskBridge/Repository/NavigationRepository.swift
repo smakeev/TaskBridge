@@ -20,7 +20,7 @@ public enum NavigationDestinationMessageScopeId: Equatable {
 }
 
 @MainActor
-public protocol NavigationRepository {
+public protocol NavigationRepository: AnyObject {
     var activePath: AsyncStream<NavigationPath?> { get }
     var currentTab: AsyncStream<AppTab> { get }
     var overlay: AsyncStream<NavigationOverlay?> { get }

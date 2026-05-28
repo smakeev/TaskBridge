@@ -1,61 +1,15 @@
 import SwiftUI
 import TaskBridgeCore
 
-struct NavigationRepositoryKey: EnvironmentKey {
-    @MainActor static var defaultValue: NavigationRepository? = nil
-}
-
-struct TaskTemplatesRepositoryKey: EnvironmentKey {
-    @MainActor static var defaultValue: TaskTemplatesRepository? = nil
-}
-
-struct TasksRepositoryKey: EnvironmentKey {
-    @MainActor static var defaultValue: TasksRepository? = nil
-}
-
-struct RemindersRepositoryKey: EnvironmentKey {
-    @MainActor static var defaultValue: RemindersRepository? = nil
-}
-
-struct MessagesRepositoryKey: EnvironmentKey {
-    @MainActor static var defaultValue: MessagesRepository? = nil
-}
-
-extension EnvironmentValues {
-    var navigationRepository: NavigationRepository? {
-        get { self[NavigationRepositoryKey.self] }
-        set { self[NavigationRepositoryKey.self] = newValue }
-    }
-
-    var taskTemplatesRepository: TaskTemplatesRepository? {
-        get { self[TaskTemplatesRepositoryKey.self] }
-        set { self[TaskTemplatesRepositoryKey.self] = newValue }
-    }
-
-    var tasksRepository: TasksRepository? {
-        get { self[TasksRepositoryKey.self] }
-        set { self[TasksRepositoryKey.self] = newValue }
-    }
-
-    var remindersRepository: RemindersRepository? {
-        get { self[RemindersRepositoryKey.self] }
-        set { self[RemindersRepositoryKey.self] = newValue }
-    }
-
-    var messagesRepository: MessagesRepository? {
-        get { self[MessagesRepositoryKey.self] }
-        set { self[MessagesRepositoryKey.self] = newValue }
-    }
-}
-
-@main
-struct TaskBridgeApp: App {
+@MainActor
+final class RepositoriesStorage {
     private let taskBridge: TaskBridge
-    private let navigationRepository: NavigationRepository
-    private let taskTemplatesRepository: TaskTemplatesRepository
-    private let tasksRepository: TasksRepository
-    private let remindersRepository: RemindersRepository
-    private let messagesRepository: MessagesRepository
+
+    private weak var navigationRepositoryRef: NavigationRepository?
+    private weak var taskTemplatesRepositoryRef: TaskTemplatesRepository?
+    private weak var tasksRepositoryRef: TasksRepository?
+    private weak var remindersRepositoryRef: RemindersRepository?
+    private weak var messagesRepositoryRef: MessagesRepository?
 
     init() {
         let platformDependencies = PlatformDependencies()
@@ -63,31 +17,77 @@ struct TaskBridgeApp: App {
             reminderHandler: iOSReminderHandler()
         )
         self.taskBridge = TaskBridge(platformDependencies: platformDependencies, platformHandlers: platformHandlers)
+    }
 
-        let navigationInteractor = taskBridge.navigationInteractor()
-        self.navigationRepository = NavigationRepositoryImpl(interactor: navigationInteractor)
+    var navigationRepository: NavigationRepository {
+        if let repository = navigationRepositoryRef {
+            return repository
+        }
+        let repository = NavigationRepositoryImpl(interactor: taskBridge.navigationInteractor())
+        navigationRepositoryRef = repository
+        return repository
+    }
 
-        let templatesInteractor = taskBridge.templatesInteractor()
-        self.taskTemplatesRepository = TaskTemplatesRepositoryImpl(interactor: templatesInteractor)
+    var taskTemplatesRepository: TaskTemplatesRepository {
+        if let repository = taskTemplatesRepositoryRef {
+            return repository
+        }
+        let repository = TaskTemplatesRepositoryImpl(interactor: taskBridge.templatesInteractor())
+        taskTemplatesRepositoryRef = repository
+        return repository
+    }
 
-        let tasksInteractor = taskBridge.tasksInteractor()
-        self.tasksRepository = TasksRepositoryImpl(interactor: tasksInteractor)
+    var tasksRepository: TasksRepository {
+        if let repository = tasksRepositoryRef {
+            return repository
+        }
+        let repository = TasksRepositoryImpl(interactor: taskBridge.tasksInteractor())
+        tasksRepositoryRef = repository
+        return repository
+    }
 
-        let remindersInteractor = taskBridge.remindersInteractor()
-        self.remindersRepository = RemindersRepositoryImpl(interactor: remindersInteractor)
+    var remindersRepository: RemindersRepository {
+        if let repository = remindersRepositoryRef {
+            return repository
+        }
+        let repository = RemindersRepositoryImpl(interactor: taskBridge.remindersInteractor())
+        remindersRepositoryRef = repository
+        return repository
+    }
 
-        let messagesInteractor = taskBridge.messagesInteractor()
-        self.messagesRepository = MessagesRepositoryImpl(interactor: messagesInteractor)
+    var messagesRepository: MessagesRepository {
+        if let repository = messagesRepositoryRef {
+            return repository
+        }
+        let repository = MessagesRepositoryImpl(interactor: taskBridge.messagesInteractor())
+        messagesRepositoryRef = repository
+        return repository
+    }
+}
+
+struct RepositoriesStorageKey: EnvironmentKey {
+    @MainActor static var defaultValue: RepositoriesStorage? = nil
+}
+
+extension EnvironmentValues {
+    var repositoriesStorage: RepositoriesStorage? {
+        get { self[RepositoriesStorageKey.self] }
+        set { self[RepositoriesStorageKey.self] = newValue }
+    }
+}
+
+@main
+struct TaskBridgeApp: App {
+    private let repositoriesStorage: RepositoriesStorage
+
+    init() {
+        self.repositoriesStorage = RepositoriesStorage()
     }
 
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .environment(\.navigationRepository, navigationRepository)
-                .environment(\.taskTemplatesRepository, taskTemplatesRepository)
-                .environment(\.tasksRepository, tasksRepository)
-                .environment(\.remindersRepository, remindersRepository)
-                .environment(\.messagesRepository, messagesRepository)
+                .environment(\.repositoriesStorage, repositoriesStorage)
         }
     }
 }

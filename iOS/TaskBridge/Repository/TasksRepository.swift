@@ -2,7 +2,7 @@ import Foundation
 import TaskBridgeCore
 
 @MainActor
-protocol TasksRepository {
+protocol TasksRepository: AnyObject {
     var tasksState: AsyncStream<TasksState> { get }
     
     func loadTasks() async throws

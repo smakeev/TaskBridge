@@ -2,60 +2,41 @@ import SwiftUI
 import TaskBridgeCore
 
 struct TasksNavigationView: View {
-    @Environment(\.navigationRepository) private var navigationRepository
-    @State private var currentDestination: NavigationDestination?
-
     var body: some View {
-        DestinationMapper(destination: currentDestination)
-            .task {
-                await observeNavigation(rootType: NavigationDestinationTasksRoot.self)
-            }
-    }
-
-    private func observeNavigation(rootType: Any.Type) async {
-        guard let navigationRepository else { return }
-        for await path in navigationRepository.activePath {
-            if let path, let root = path.root, type(of: root) == rootType {
-                currentDestination = path.current
-            }
-        }
+        NavigationScreen(rootType: NavigationDestinationTasksRoot.self)
     }
 }
 
 struct TemplatesNavigationView: View {
-    @Environment(\.navigationRepository) private var navigationRepository
-    @State private var currentDestination: NavigationDestination?
-
     var body: some View {
-        DestinationMapper(destination: currentDestination)
-            .task {
-                await observeNavigation(rootType: NavigationDestinationTemplatesRoot.self)
-            }
-    }
-
-    private func observeNavigation(rootType: Any.Type) async {
-        guard let navigationRepository else { return }
-        for await path in navigationRepository.activePath {
-            if let path, let root = path.root, type(of: root) == rootType {
-                currentDestination = path.current
-            }
-        }
+        NavigationScreen(rootType: NavigationDestinationTemplatesRoot.self)
     }
 }
 
 struct RemindersNavigationView: View {
-    @Environment(\.navigationRepository) private var navigationRepository
+    var body: some View {
+        NavigationScreen(rootType: NavigationDestinationRemindersRoot.self)
+    }
+}
+
+private struct NavigationScreen: View {
+    let rootType: Any.Type
+
+    @Environment(\.repositoriesStorage) private var repositoriesStorage
+    @State private var navigationRepository: NavigationRepository?
     @State private var currentDestination: NavigationDestination?
 
     var body: some View {
         DestinationMapper(destination: currentDestination)
             .task {
-                await observeNavigation(rootType: NavigationDestinationRemindersRoot.self)
+                await observeNavigation()
             }
     }
 
-    private func observeNavigation(rootType: Any.Type) async {
-        guard let navigationRepository else { return }
+    private func observeNavigation() async {
+        let repository = navigationRepository ?? repositoriesStorage?.navigationRepository
+        navigationRepository = repository
+        guard let navigationRepository = repository else { return }
         for await path in navigationRepository.activePath {
             if let path, let root = path.root, type(of: root) == rootType {
                 currentDestination = path.current

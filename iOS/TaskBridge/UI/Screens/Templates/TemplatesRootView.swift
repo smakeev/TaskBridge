@@ -2,15 +2,13 @@ import SwiftUI
 import TaskBridgeCore
 
 struct TemplatesRootView: View {
-    @Environment(\.taskTemplatesRepository) private var templatesRepository
-    @Environment(\.tasksRepository) private var tasksRepository
+    @Environment(\.repositoriesStorage) private var repositoriesStorage
 
     var body: some View {
-        if let templatesRepository,
-           let tasksRepository {
+        if let repositoriesStorage {
             TemplatesRootContent(
-                repository: templatesRepository,
-                tasksRepository: tasksRepository
+                repository: repositoriesStorage.taskTemplatesRepository,
+                tasksRepository: repositoriesStorage.tasksRepository
             )
         } else {
             ProgressView("Initializing...")

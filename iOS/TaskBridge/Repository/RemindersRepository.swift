@@ -2,7 +2,7 @@ import Foundation
 import TaskBridgeCore
 
 @MainActor
-protocol RemindersRepository {
+protocol RemindersRepository: AnyObject {
     var remindersState: AsyncStream<RemindersState> { get }
     
     func loadReminders() async throws

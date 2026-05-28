@@ -4,11 +4,7 @@ import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.taskbridge.android.repository.NavigationRepository
-import com.taskbridge.android.repository.MessagesRepository
-import com.taskbridge.android.repository.RemindersRepository
-import com.taskbridge.android.repository.TaskTemplatesRepository
-import com.taskbridge.android.repository.TasksRepository
+import com.taskbridge.android.ui.LocalRepositoriesStorage
 import com.taskbridge.android.ui.screens.*
 import com.taskbridge.android.ui.screens.reminders.RemindersRootScreen
 import com.taskbridge.android.ui.screens.tasks.TaskDetailsScreen
@@ -20,27 +16,89 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 
 @Composable
-fun TasksNavigationScreen(
-    navigationRepository: NavigationRepository,
-    tasksRepository: TasksRepository,
-    remindersRepository: RemindersRepository,
-    messagesRepository: MessagesRepository
-) {
-    val currentDestination by remember(navigationRepository) {
-        navigationRepository.activePath
-            .filter { path -> path?.root is NavigationDestination.TasksRoot }
-            .map { path -> path?.current }
-    }.collectAsState(initial = NavigationDestination.TasksRoot)
-
-    DestinationMapper(currentDestination, null, tasksRepository, remindersRepository, messagesRepository, navigationRepository)
+fun TasksNavigationScreen() {
+    NavigationScreen(
+        rootDestination = NavigationDestination.TasksRoot,
+        rootMatches = { it is NavigationDestination.TasksRoot }
+    )
 }
 
 @Composable
-fun TemplatesNavigationScreen(
-    navigationRepository: NavigationRepository,
-    templatesRepository: TaskTemplatesRepository,
-    tasksRepository: TasksRepository
+fun TemplatesNavigationScreen() {
+    NavigationScreen(
+        rootDestination = NavigationDestination.TemplatesRoot,
+        rootMatches = { it is NavigationDestination.TemplatesRoot }
+    )
+}
+
+@Composable
+fun RemindersNavigationScreen() {
+    NavigationScreen(
+        rootDestination = NavigationDestination.RemindersRoot,
+        rootMatches = { it is NavigationDestination.RemindersRoot }
+    )
+}
+
+@Composable
+private fun NavigationScreen(
+    rootDestination: NavigationDestination,
+    rootMatches: (NavigationDestination?) -> Boolean
 ) {
+    val repositoriesStorage = LocalRepositoriesStorage.current
+    val navigationRepository = remember(repositoriesStorage) {
+        repositoriesStorage.navigationRepository()
+    }
+    val currentDestination by remember(navigationRepository, rootDestination) {
+        navigationRepository.activePath
+            .filter { path -> rootMatches(path?.root) }
+            .map { path -> path?.current }
+    }.collectAsState(initial = rootDestination)
+
+    DestinationMapper(currentDestination)
+}
+
+@Composable
+private fun DestinationMapper(
+    destination: NavigationDestination?
+) {
+    val repositoriesStorage = LocalRepositoriesStorage.current
+    val navigationRepository = remember(repositoriesStorage) {
+        repositoriesStorage.navigationRepository()
+    }
+    val tasksRepository = remember(repositoriesStorage) {
+        repositoriesStorage.tasksRepository()
+    }
+    val remindersRepository = remember(repositoriesStorage) {
+        repositoriesStorage.remindersRepository()
+    }
+    val messagesRepository = remember(repositoriesStorage) {
+        repositoriesStorage.messagesRepository()
+    }
+
+    when (destination) {
+        is NavigationDestination.TasksRoot ->
+            TasksRootScreen(tasksRepository, remindersRepository, navigationRepository, messagesRepository)
+        is NavigationDestination.TemplatesRoot -> TemplatesRootDestination()
+        is NavigationDestination.RemindersRoot ->
+            RemindersRootScreen(remindersRepository, navigationRepository, messagesRepository)
+        is NavigationDestination.TaskDetails ->
+            TaskDetailsScreen(destination.taskId, tasksRepository, remindersRepository, navigationRepository, messagesRepository)
+        is NavigationDestination.CreateTask -> CreateTaskScreen(destination.parentTaskId)
+        is NavigationDestination.TemplateNameInput -> TemplateNameInputScreen(destination.templateId)
+        is NavigationDestination.ReminderDetails -> ReminderDetailsScreen(destination.reminderId)
+        null -> { /* Render nothing or a loading state */ }
+    }
+}
+
+@Composable
+private fun TemplatesRootDestination() {
+    val repositoriesStorage = LocalRepositoriesStorage.current
+    val templatesRepository = remember(repositoriesStorage) {
+        repositoriesStorage.taskTemplatesRepository()
+    }
+    val tasksRepository = remember(repositoriesStorage) {
+        repositoriesStorage.tasksRepository()
+    }
     val templatesViewModel: TaskTemplatesViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -49,63 +107,6 @@ fun TemplatesNavigationScreen(
             }
         }
     )
-    val currentDestination by remember(navigationRepository) {
-        navigationRepository.activePath
-            .filter { path -> path?.root is NavigationDestination.TemplatesRoot }
-            .map { path -> path?.current }
-    }.collectAsState(initial = NavigationDestination.TemplatesRoot)
 
-    DestinationMapper(currentDestination, templatesViewModel, null, null, null, navigationRepository)
-}
-
-@Composable
-fun RemindersNavigationScreen(
-    navigationRepository: NavigationRepository,
-    remindersRepository: RemindersRepository,
-    messagesRepository: MessagesRepository
-) {
-    val currentDestination by remember(navigationRepository) {
-        navigationRepository.activePath
-            .filter { path -> path?.root is NavigationDestination.RemindersRoot }
-            .map { path -> path?.current }
-    }.collectAsState(initial = NavigationDestination.RemindersRoot)
-
-    DestinationMapper(currentDestination, null, null, remindersRepository, messagesRepository, navigationRepository)
-}
-
-@Composable
-private fun DestinationMapper(
-    destination: NavigationDestination?,
-    templatesViewModel: TaskTemplatesViewModel?,
-    tasksRepository: TasksRepository?,
-    remindersRepository: RemindersRepository?,
-    messagesRepository: MessagesRepository?,
-    navigationRepository: NavigationRepository
-) {
-    when (destination) {
-        is NavigationDestination.TasksRoot -> {
-            if (tasksRepository != null && remindersRepository != null && messagesRepository != null) {
-                TasksRootScreen(tasksRepository, remindersRepository, navigationRepository, messagesRepository)
-            }
-        }
-        is NavigationDestination.TemplatesRoot -> {
-            if (templatesViewModel != null) {
-                TemplatesRootScreen(templatesViewModel)
-            }
-        }
-        is NavigationDestination.RemindersRoot -> {
-            if (remindersRepository != null && messagesRepository != null) {
-                RemindersRootScreen(remindersRepository, navigationRepository, messagesRepository)
-            }
-        }
-        is NavigationDestination.TaskDetails -> {
-            if (tasksRepository != null && remindersRepository != null && messagesRepository != null) {
-                TaskDetailsScreen(destination.taskId, tasksRepository, remindersRepository, navigationRepository, messagesRepository)
-            }
-        }
-        is NavigationDestination.CreateTask -> CreateTaskScreen(destination.parentTaskId)
-        is NavigationDestination.TemplateNameInput -> TemplateNameInputScreen(destination.templateId)
-        is NavigationDestination.ReminderDetails -> ReminderDetailsScreen(destination.reminderId)
-        null -> { /* Render nothing or a loading state */ }
-    }
+    TemplatesRootScreen(templatesViewModel)
 }

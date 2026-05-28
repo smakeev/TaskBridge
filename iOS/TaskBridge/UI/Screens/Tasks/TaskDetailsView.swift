@@ -4,22 +4,16 @@ import TaskBridgeCore
 struct TaskDetailsView: View {
     let taskId: String
 
-    @Environment(\.tasksRepository) private var tasksRepository
-    @Environment(\.remindersRepository) private var remindersRepository
-    @Environment(\.navigationRepository) private var navigationRepository
-    @Environment(\.messagesRepository) private var messagesRepository
+    @Environment(\.repositoriesStorage) private var repositoriesStorage
 
     var body: some View {
-        if let tasksRepository,
-           let remindersRepository,
-           let navigationRepository,
-           let messagesRepository {
+        if let repositoriesStorage {
             TaskDetailsContent(
                 taskId: taskId,
-                tasksRepository: tasksRepository,
-                remindersRepository: remindersRepository,
-                navigationRepository: navigationRepository,
-                messagesRepository: messagesRepository
+                tasksRepository: repositoriesStorage.tasksRepository,
+                remindersRepository: repositoriesStorage.remindersRepository,
+                navigationRepository: repositoriesStorage.navigationRepository,
+                messagesRepository: repositoriesStorage.messagesRepository
             )
         } else {
             ProgressView("Initializing...")
