@@ -1,7 +1,5 @@
 package com.taskbridge.android.ui.screens.tasks
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,12 +46,12 @@ import com.taskbridge.android.repository.MessagesRepository
 import com.taskbridge.android.repository.NavigationDestinationMessageScopeId
 import com.taskbridge.android.repository.RemindersRepository
 import com.taskbridge.android.repository.TasksRepository
+import com.taskbridge.android.ui.components.rememberScrollBlinkHighlighter
 import com.taskbridge.android.ui.tasks.TasksViewModel
 import com.taskbridge.core.models.messages.AppMessage
 import com.taskbridge.core.models.navigation.NavigationDestinationMessage
 import com.taskbridge.core.models.tasks.TaskItem
 import com.taskbridge.core.models.tasks.TaskType
-import kotlinx.coroutines.delay
 
 @Composable
 fun TaskDetailsScreen(
@@ -82,31 +80,21 @@ fun TaskDetailsScreen(
     var showSubtaskDialog by remember { mutableStateOf(false) }
     var taskToRename by remember { mutableStateOf<TaskItem?>(null) }
     var taskForReminder by remember { mutableStateOf<TaskItem?>(null) }
-    var highlightedTaskId by remember { mutableStateOf<String?>(null) }
-    val highlightAlpha = remember { Animatable(0f) }
+    val highlighter = rememberScrollBlinkHighlighter()
     val listState = rememberLazyListState()
 
     suspend fun scrollToAndBlink(childTaskId: String) {
-        // The subtask may not be in the parent's children yet when this fires from a
-        // cross-tab navigation (the StateFlow is WhileSubscribed(5000) and needs a moment
-        // to deliver the latest snapshot to the freshly-mounted screen). Wait briefly.
-        var waited = 0
-        while (waited < 2000 && currentTask?.children?.none { it.id.value == childTaskId } != false) {
-            delay(50)
-            waited += 50
-        }
-        val childIndex = currentTask?.children?.indexOfFirst { child -> child.id.value == childTaskId } ?: -1
-        if (childIndex < 0) return
-
-        highlightedTaskId = childTaskId
-        listState.animateScrollToItem(childIndex + taskDetailsChildrenOffset)
-        repeat(2) {
-            highlightAlpha.animateTo(1f, animationSpec = tween(durationMillis = 1000))
-            highlightAlpha.animateTo(0f, animationSpec = tween(durationMillis = 1000))
-        }
-        if (highlightedTaskId == childTaskId) {
-            highlightedTaskId = null
-        }
+        highlighter.scrollToAndBlink(
+            id = childTaskId,
+            listState = listState,
+            findItemIndex = {
+                currentTask?.children
+                    ?.indexOfFirst { child -> child.id.value == childTaskId }
+                    ?.takeIf { index -> index >= 0 }
+                    ?.let { index -> index + taskDetailsChildrenOffset }
+                    ?: -1
+            }
+        )
     }
 
     LaunchedEffect(Unit) {
@@ -252,8 +240,8 @@ fun TaskDetailsScreen(
                                     onAddReminder = { taskForReminder = it },
                                     onRename = { taskToRename = it },
                                     onDelete = { viewModel.deleteTaskTree(it.id) },
-                                    highlightedTaskId = highlightedTaskId,
-                                    highlightAlpha = highlightAlpha.value
+                                    highlightedTaskId = highlighter.highlightedId,
+                                    highlightAlpha = highlighter.alpha.value
                                 )
                             }
                         }

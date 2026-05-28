@@ -35,9 +35,7 @@ private struct TaskDetailsContent: View {
     @State private var isShowingSubtaskSheet = false
     @State private var taskToRename: TaskItem?
     @State private var taskForReminder: TaskItem?
-    @State private var highlightedTaskId: String?
-    @State private var blinkingTaskId: String?
-    @State private var highlightOpacity = 0.0
+    @StateObject private var highlighter = ScrollBlinkHighlighter()
 
     init(
         taskId: String,
@@ -89,8 +87,8 @@ private struct TaskDetailsContent: View {
                                     TaskTreeRowsView(
                                         task: child,
                                         depth: 0,
-                                        highlightedTaskId: highlightedTaskId,
-                                        highlightOpacity: highlightOpacity,
+                                        highlightedTaskId: highlighter.highlightedId,
+                                        highlightOpacity: highlighter.opacity,
                                         onOpen: openTaskDetails,
                                         onToggleCheckbox: viewModel.toggleCheckbox,
                                         onProgressChanged: viewModel.updateProgress,
@@ -118,7 +116,7 @@ private struct TaskDetailsContent: View {
                 await consumePendingNavigationMessage(scrollProxy: proxy)
             }
             .onChange(of: task?.children.map(\.taskIdValue) ?? []) { _ in
-                guard let highlightedTaskId else { return }
+                guard let highlightedTaskId = highlighter.highlightedId else { return }
                 withAnimation(.easeInOut(duration: 0.35)) {
                     proxy.scrollTo(highlightedTaskId, anchor: .center)
                 }
@@ -244,7 +242,11 @@ private struct TaskDetailsContent: View {
                 continue
             }
             guard (try? await viewModel.isCurrentTaskDetails(taskId: taskId)) == true else { continue }
-            await scrollToAndBlink(id: taskAdded.id.value, scrollProxy: scrollProxy)
+            await highlighter.scrollToAndBlink(
+                id: taskAdded.id.value,
+                scrollProxy: scrollProxy,
+                waitForItem: waitForTaskRow
+            )
         }
     }
 
@@ -257,47 +259,12 @@ private struct TaskDetailsContent: View {
             return
         }
 
-        await scrollToAndBlink(id: taskElement.taskId, scrollProxy: scrollProxy, presentationDelayNanoseconds: 1_200_000_000)
-    }
-
-    @MainActor
-    private func scrollToAndBlink(
-        id: String,
-        scrollProxy: ScrollViewProxy,
-        presentationDelayNanoseconds: UInt64 = 1_200_000_000
-    ) async {
-        guard blinkingTaskId != id else { return }
-        blinkingTaskId = id
-        defer {
-            if blinkingTaskId == id {
-                blinkingTaskId = nil
-            }
-        }
-
-        guard await waitForTaskRow(id: id) else { return }
-
-        highlightedTaskId = id
-        highlightOpacity = 0.0
-
-        withAnimation(.easeInOut(duration: 0.35)) {
-            scrollProxy.scrollTo(id, anchor: .center)
-        }
-        await uncancellableSleep(nanoseconds: presentationDelayNanoseconds)
-
-        for _ in 0..<2 {
-            withAnimation(.easeInOut(duration: 1.0)) {
-                highlightOpacity = 1.0
-            }
-            await uncancellableSleep(nanoseconds: 1_000_000_000)
-            withAnimation(.easeInOut(duration: 1.0)) {
-                highlightOpacity = 0.0
-            }
-            await uncancellableSleep(nanoseconds: 1_000_000_000)
-        }
-
-        if highlightedTaskId == id {
-            highlightedTaskId = nil
-        }
+        await highlighter.scrollToAndBlink(
+            id: taskElement.taskId,
+            scrollProxy: scrollProxy,
+            presentationDelayNanoseconds: 1_200_000_000,
+            waitForItem: waitForTaskRow
+        )
     }
 
     @MainActor

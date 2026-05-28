@@ -24,8 +24,7 @@ struct RemindersRootView: View {
 private struct RemindersRootContent: View {
     @StateObject private var viewModel: RemindersViewModel
 
-    @State private var highlightedReminderId: String?
-    @State private var highlightOpacity = 0.0
+    @StateObject private var highlighter = ScrollBlinkHighlighter()
 
     init(
         repository: RemindersRepository,
@@ -79,7 +78,7 @@ private struct RemindersRootContent: View {
                 await consumePendingNavigationMessage(scrollProxy: proxy)
             }
             .onChange(of: viewModel.state.reminders.map(\.reminderIdValue)) { _ in
-                guard let highlightedReminderId else { return }
+                guard let highlightedReminderId = highlighter.highlightedId else { return }
                 withAnimation(.easeInOut(duration: 0.35)) {
                     proxy.scrollTo(highlightedReminderId, anchor: .center)
                 }
@@ -149,14 +148,14 @@ private struct RemindersRootContent: View {
         .padding(14)
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .background(
-            Color.accentColor.opacity(highlightedReminderId == reminder.reminderIdValue ? 0.22 * highlightOpacity : 0),
+            Color.accentColor.opacity(highlighter.highlightedId == reminder.reminderIdValue ? 0.22 * highlighter.opacity : 0),
             in: RoundedRectangle(cornerRadius: 14, style: .continuous)
         )
         .overlay {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(
-                    highlightedReminderId == reminder.reminderIdValue ? Color.accentColor.opacity(0.75 * highlightOpacity) : Color.primary.opacity(0.06),
-                    lineWidth: highlightedReminderId == reminder.reminderIdValue ? 2 : 1
+                    highlighter.highlightedId == reminder.reminderIdValue ? Color.accentColor.opacity(0.75 * highlighter.opacity) : Color.primary.opacity(0.06),
+                    lineWidth: highlighter.highlightedId == reminder.reminderIdValue ? 2 : 1
                 )
         }
     }
@@ -164,7 +163,7 @@ private struct RemindersRootContent: View {
     private func observeReminderCreatedMessages(scrollProxy: ScrollViewProxy) async {
         for await message in viewModel.observeReminderCreatedMessages() {
             guard let reminderCreated = message as? AppMessageReminderCreated else { continue }
-            await scrollToAndBlink(id: reminderCreated.id.value, scrollProxy: scrollProxy)
+            await highlighter.scrollToAndBlink(id: reminderCreated.id.value, scrollProxy: scrollProxy)
         }
     }
 
@@ -176,30 +175,7 @@ private struct RemindersRootContent: View {
             return
         }
 
-        await scrollToAndBlink(id: elementId.value, scrollProxy: scrollProxy)
-    }
-
-    @MainActor
-    private func scrollToAndBlink(id: String, scrollProxy: ScrollViewProxy) async {
-        highlightedReminderId = id
-        withAnimation(.easeInOut(duration: 0.35)) {
-            scrollProxy.scrollTo(id, anchor: .center)
-        }
-
-        for _ in 0..<2 {
-            withAnimation(.easeInOut(duration: 1.0)) {
-                highlightOpacity = 1.0
-            }
-            await uncancellableSleep(nanoseconds: 1_000_000_000)
-            withAnimation(.easeInOut(duration: 1.0)) {
-                highlightOpacity = 0.0
-            }
-            await uncancellableSleep(nanoseconds: 1_000_000_000)
-        }
-
-        if highlightedReminderId == id {
-            highlightedReminderId = nil
-        }
+        await highlighter.scrollToAndBlink(id: elementId.value, scrollProxy: scrollProxy)
     }
 
     private func formatReminderTime(_ triggerAtMillis: Int64) -> String {

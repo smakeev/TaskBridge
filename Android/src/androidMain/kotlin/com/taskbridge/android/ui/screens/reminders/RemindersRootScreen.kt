@@ -1,7 +1,5 @@
 package com.taskbridge.android.ui.screens.reminders
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -29,7 +27,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,12 +35,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import com.taskbridge.android.repository.MessagesRepository
 import com.taskbridge.android.repository.NavigationDestinationMessageScopeId
 import com.taskbridge.android.repository.NavigationRepository
 import com.taskbridge.android.repository.RemindersRepository
+import com.taskbridge.android.ui.components.rememberScrollBlinkHighlighter
 import com.taskbridge.android.ui.reminders.RemindersViewModel
 import com.taskbridge.core.models.messages.AppMessage
 import com.taskbridge.core.models.navigation.NavigationDestinationMessage
@@ -71,24 +67,21 @@ fun RemindersRootScreen(
         }
     )
     val state by viewModel.state.collectAsState()
-    var highlightedReminderId by remember { mutableStateOf<String?>(null) }
-    val highlightAlpha = remember { Animatable(0f) }
+    val highlighter = rememberScrollBlinkHighlighter()
     val listState = rememberLazyListState()
     val currentState by rememberUpdatedState(state)
 
     suspend fun scrollToAndBlink(reminderId: String) {
-        highlightedReminderId = reminderId
-        val index = currentState.reminders.indexOfFirst { reminder -> reminder.id.value == reminderId }
-        if (index >= 0) {
-            listState.animateScrollToItem(index + remindersListHeaderOffset(currentState))
-        }
-        repeat(2) {
-            highlightAlpha.animateTo(1f, animationSpec = tween(durationMillis = 1000))
-            highlightAlpha.animateTo(0f, animationSpec = tween(durationMillis = 1000))
-        }
-        if (highlightedReminderId == reminderId) {
-            highlightedReminderId = null
-        }
+        highlighter.scrollToAndBlink(
+            id = reminderId,
+            listState = listState,
+            findItemIndex = {
+                currentState.reminders.indexOfFirst { reminder -> reminder.id.value == reminderId }
+                    .takeIf { index -> index >= 0 }
+                    ?.let { index -> index + remindersListHeaderOffset(currentState) }
+                    ?: -1
+            }
+        )
     }
 
     LaunchedEffect(Unit) {
@@ -99,14 +92,6 @@ fun RemindersRootScreen(
         viewModel.observeReminderCreatedMessages().collect { message ->
             val reminderId = (message as? AppMessage.ReminderCreated)?.id?.value ?: return@collect
             scrollToAndBlink(reminderId)
-        }
-    }
-
-    LaunchedEffect(highlightedReminderId, state.reminders) {
-        val reminderId = highlightedReminderId ?: return@LaunchedEffect
-        val index = state.reminders.indexOfFirst { reminder -> reminder.id.value == reminderId }
-        if (index >= 0) {
-            listState.animateScrollToItem(index + remindersListHeaderOffset(state))
         }
     }
 
@@ -173,8 +158,8 @@ fun RemindersRootScreen(
             ReminderCard(
                 reminder = reminder,
                 onDelete = { viewModel.cancelReminder(reminder.id) },
-                isHighlighted = highlightedReminderId == reminder.id.value,
-                highlightAlpha = highlightAlpha.value
+                isHighlighted = highlighter.highlightedId == reminder.id.value,
+                highlightAlpha = highlighter.alpha.value
             )
         }
     }
