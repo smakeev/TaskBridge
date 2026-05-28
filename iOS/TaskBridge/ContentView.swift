@@ -62,7 +62,7 @@ struct ContentView: View {
                         }
                     }
                     .task {
-                        for await message in messagesRepo.observe(type: AppMessageTypes.shared.reminderCreated) {
+                        for await message in messagesRepo.observe(type: AppMessageKeys.shared.reminderCreated) {
                             showToast(for: message)
                         }
                     }

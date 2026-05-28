@@ -9,7 +9,15 @@ class MessagesRepositoryImpl: MessagesRepository {
         self.interactor = interactor
     }
 
-    func observe(type: any KotlinKClass) -> AsyncStream<AppMessage> {
+    func observeAll() -> AsyncStream<AppMessage> {
+        return createStream(for: interactor.observeAll())
+    }
+
+    func observe(types: [AppMessageKey]) -> AsyncStream<AppMessage> {
+        return createStream(for: interactor.observe(types: types))
+    }
+
+    func observe(type: AppMessageKey) -> AsyncStream<AppMessage> {
         return createStream(for: interactor.observe(type: type))
     }
 

@@ -3,13 +3,21 @@ package com.taskbridge.android.repository.impl
 import com.taskbridge.android.repository.MessagesRepository
 import com.taskbridge.core.interactors.messages.MessagesInteractor
 import com.taskbridge.core.models.messages.AppMessage
+import com.taskbridge.core.models.messages.AppMessageKey
 import kotlinx.coroutines.flow.Flow
-import kotlin.reflect.KClass
 
 class MessagesRepositoryImpl(
     private val interactor: MessagesInteractor
 ) : MessagesRepository {
-    override fun observe(type: KClass<out AppMessage>): Flow<AppMessage> {
+    override fun observeAll(): Flow<AppMessage> {
+        return interactor.observeAll()
+    }
+
+    override fun observe(types: List<AppMessageKey>): Flow<AppMessage> {
+        return interactor.observe(types)
+    }
+
+    override fun observe(type: AppMessageKey): Flow<AppMessage> {
         return interactor.observe(type)
     }
 

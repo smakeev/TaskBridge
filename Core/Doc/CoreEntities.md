@@ -62,10 +62,12 @@ Public platform-facing interactor for managing reminders.
 
 ### MessagesInteractor
 Public platform-facing interactor for one-shot messages.
-- `observe(type: KClass<out AppMessage>)`: Returns a `Flow<AppMessage>` for the requested message type.
+- `observeAll()`: Returns a `Flow<AppMessage>` for every supported message emitted by Core.
+- `observe(type: AppMessageKey)`: Returns a `Flow<AppMessage>` for the requested message type.
+- `observe(types: List<AppMessageKey>)`: Returns a `Flow<AppMessage>` for the requested message types. Duplicate types are collapsed before subscription.
 - `publish(message)`: Reserved for future platform-to-Core messages. Currently fails with `AppMessageError.UnsupportedCoreMessage`.
 
-The interactor is the only layer that maps internal `CoreMessage` payloads to public `AppMessage` values. It uses a mapper registry keyed by concrete `AppMessage` type, requests the matching Core subscription from `MessagesUseCase`, and returns only that message stream. Platform-to-Core publish support is guarded by an interactor-owned set of supported `AppMessage` types. Reminder-created text is currently hardcoded here, but it should later use a `LocalizationHandler` to return localized platform-ready text.
+The interactor is the only layer that maps internal `CoreMessage` payloads to public `AppMessage` values. It uses a mapper registry keyed by concrete `AppMessage` type, exposes public `AppMessageKey` values instead of raw reflection types, can observe all mapped messages, and can request a single Core stream filtered by a list of requested types. Platform-to-Core publish support is guarded by an interactor-owned set of supported `AppMessage` types. Reminder-created text is currently hardcoded here, but it should later use a `LocalizationHandler` to return localized platform-ready text.
 
 ---
 
@@ -202,7 +204,7 @@ Internal use case for managing reminders. Orchestrates reminder stories to provi
 - `observeReminders()`: Returns a `Flow<RemindersServiceData>`.
 
 ### MessagesUseCase
-Internal common message use case. It can publish internal `CoreMessage` values and observe a requested internal message type by filtering the stream from `ObserveMessagesStory`. It does not know about public `AppMessage` models.
+Internal common message use case. It can publish internal `CoreMessage` values, observe all internal messages, and observe one or more requested internal message types by applying one set-based filter to the stream from `ObserveMessagesStory`. It does not know about public `AppMessage` models.
 
 ---
 

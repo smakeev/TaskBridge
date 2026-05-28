@@ -3,11 +3,12 @@ package com.taskbridge.core.interactors.messages
 import com.taskbridge.core.messages.internal.CoreMessage
 import com.taskbridge.core.models.messages.AppMessage
 import com.taskbridge.core.models.messages.AppMessageError
+import com.taskbridge.core.models.messages.AppMessageKey
 import com.taskbridge.core.models.reminders.ReminderType
 import com.taskbridge.core.usecases.messages.MessagesUseCase
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.datetime.Instant
 import kotlin.reflect.KClass
 
@@ -18,30 +19,33 @@ public class MessagesInteractor internal constructor(
 
     private data class OutboundMapper(
         val coreType: KClass<out CoreMessage>,
-        val map: (Flow<CoreMessage>) -> Flow<AppMessage>
+        val mapMessage: (CoreMessage) -> AppMessage?
     )
 
     private val outboundMappers: Map<KClass<out AppMessage>, OutboundMapper> = mapOf(
         AppMessage.ReminderCreated::class to OutboundMapper(
             coreType = CoreMessage.ReminderCreated::class,
-            map = { messages ->
-                messages
-                    .filterIsInstance<CoreMessage.ReminderCreated>()
-                    .map { message ->
-                        // TODO: Use the upcoming LocalizationHandler to return localized platform-ready text.
-                        AppMessage.ReminderCreated(
-                            text = "Reminder created: ${message.title} • ${message.type.label()} • ${message.triggerAtMillis.formatAsInstantText()}"
-                        )
-                    }
-            }
+            mapMessage = { message ->
+                (message as? CoreMessage.ReminderCreated)?.toAppMessage()
+            },
         )
     )
 
-    public fun observe(type: KClass<out AppMessage>): Flow<AppMessage> {
-        val mapper = outboundMappers[type]
-            ?: error("Unsupported app message subscription: ${type.simpleName}")
-        val coreMessages = messagesUseCase.observe(mapper.coreType)
-        return mapper.map(coreMessages)
+    public fun observeAll(): Flow<AppMessage> {
+        return messagesUseCase.observeAll()
+            .mapNotNull { message -> mapCoreMessage(message) }
+    }
+
+    public fun observe(type: AppMessageKey): Flow<AppMessage> {
+        val mapper = mapperFor(type)
+        return messagesUseCase.observe(mapper.coreType)
+            .mapNotNull { message -> mapper.mapMessage(message) }
+    }
+
+    public fun observe(types: List<AppMessageKey>): Flow<AppMessage> {
+        val mappers = types.toSet().map { type -> mapperFor(type) }
+        return messagesUseCase.observe(mappers.map { mapper -> mapper.coreType })
+            .mapNotNull { message -> mapCoreMessage(message) }
     }
 
     public suspend fun publish(message: AppMessage) {
@@ -52,6 +56,24 @@ public class MessagesInteractor internal constructor(
 
         // No inbound platform messages are supported yet.
         throw AppMessageError.UnsupportedCoreMessage(typeName = type.simpleName ?: "Unknown")
+    }
+
+    private fun mapCoreMessage(message: CoreMessage): AppMessage? {
+        return outboundMappers.values
+            .firstOrNull { mapper -> mapper.coreType.isInstance(message) }
+            ?.mapMessage(message)
+    }
+
+    private fun mapperFor(type: AppMessageKey): OutboundMapper {
+        return outboundMappers[type.type]
+            ?: error("Unsupported app message subscription: ${type.type.simpleName}")
+    }
+
+    private fun CoreMessage.ReminderCreated.toAppMessage(): AppMessage.ReminderCreated {
+        // TODO: Use the upcoming LocalizationHandler to return localized platform-ready text.
+        return AppMessage.ReminderCreated(
+            text = "Reminder created: $title • ${type.label()} • ${triggerAtMillis.formatAsInstantText()}"
+        )
     }
 
     private fun ReminderType.label(): String {
