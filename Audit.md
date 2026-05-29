@@ -253,17 +253,21 @@ Analysis of the shared Kotlin module only (`Core/src/commonMain/**`).
 
 ### Race conditions
 
-- **Core-1 🔴 · 🔓 Open — Non-atomic `updateState` raced by two coroutines in `RemindersService`.**
-  `BaseStatefulService.updateState` does `_data.value = reducer(_data.value)` — a
+- **Core-1 🔴 · ✅ Closed-Fixed — Non-atomic `updateState` raced by two coroutines in `RemindersService`.**
+  `BaseStatefulService.updateState` did `_data.value = reducer(_data.value)` — a
   non-atomic read-modify-write. `TasksService`, `AppStateService`, and
   `RemoteResourceService` only mutate from the single command-loop coroutine, so they
-  are safe. **`RemindersService` is not:** it calls `updateState` both from the command
+  are safe. **`RemindersService` was not:** it calls `updateState` both from the command
   loop (`performLoad` / `performSchedule` / `performAction`) *and* from the separate
   `reminderEvents.events().collect { … }` coroutine, both running on
-  `Dispatchers.Default` (multi-threaded). Two concurrent RMWs lose updates — e.g. a
+  `Dispatchers.Default` (multi-threaded). Two concurrent RMWs could lose updates — e.g. a
   command’s `it.copy(isLoading = true)` built from a stale snapshot clobbers a
   freshly-arrived `reminders` list, so reminders transiently vanish or `isLoading`
-  sticks. Fix: make `updateState` atomic with `MutableStateFlow.update { }`.
+  sticks.
+  **Fix:** `updateState` now uses `MutableStateFlow.update { }` (an atomic
+  compare-and-set loop) instead of `_data.value = reducer(_data.value)`, so concurrent
+  read-modify-write callers can no longer drop updates. Single-call site change in
+  `BaseStatefulService.kt`; `:Core:compileDebugKotlinAndroid` passes.
 
 - **Core-2 🟠 · 🔓 Open — Initial reminders sync can be dropped (replay=0 bus race).**
   `RemindersService.init` launches two coroutines on the same scope: one collects
