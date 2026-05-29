@@ -165,14 +165,24 @@ aligned.
 
 ### Object lifetime / lifecycle
 
-- **And-1 🔴 · 🔓 Open — Dependency graph rebuilt on every configuration change.**
-  `MainActivity.onCreate` constructs `PlatformDependencies`, `TaskBridge`, and
+- **And-1 🔴 · ✅ Closed-Fixed — Dependency graph rebuilt on every configuration change.**
+  `MainActivity.onCreate` used to construct `PlatformDependencies`, `TaskBridge`, and
   `RepositoriesStorage.create(taskBridge, lifecycleScope)` directly. On rotation /
   config change `onCreate` runs again, so the *entire* Core graph, all repositories,
-  and all flow subscriptions are torn down and rebuilt, and the `stateIn` scope
-  (`lifecycleScope`) is cancelled. This drops in-memory state and re-does Core
-  bootstrap work on every rotation. Hoist the graph into `Application` (or a retained
-  holder / DI scope) and only read it from the Activity.
+  and all flow subscriptions were torn down and rebuilt, and the `stateIn` scope
+  (`lifecycleScope`) was cancelled — dropping in-memory state and re-doing Core
+  bootstrap on every rotation.
+  **Fix:** the graph now lives in a new `TaskBridgeApplication : Application` (registered
+  via `android:name=".TaskBridgeApplication"`), which builds `TaskBridge` +
+  `RepositoriesStorage` once per process behind a `by lazy`, using a process-lifetime
+  `appScope` (`SupervisorJob() + Dispatchers.Default`) instead of the Activity
+  `lifecycleScope`. `MainActivity.onCreate` now just reads
+  `(application as TaskBridgeApplication).repositoriesStorage`, so the graph and its
+  state survive Activity recreation. Passing the `Application` as the `Context` also
+  drops the previous Activity-context capture in
+  `PlatformDependencies`/`AndroidReminderHandler`. Builds + assembles
+  (`:Android:assembleDebug`); the Application is present in the merged manifest. (One
+  process-lifetime graph is still never disposed — that is **Core-9**.)
 
 ### Race conditions / state sharing
 
@@ -180,10 +190,11 @@ aligned.
   `TasksViewModel` and `TaskTemplatesViewModel` wrap the repository flow with
   `stateIn(viewModelScope, WhileSubscribed(5000))`, but `RemindersViewModel` exposes
   the raw `repository.remindersState` — which `RemindersRepositoryImpl` already shared
-  with `stateIn(scope = <Activity lifecycleScope>, WhileSubscribed(5000))`. The result
-  is three different sharing lifetimes for three equivalent screens (VM scope vs
-  Activity scope). Pick one pattern; tying reminder sharing to the Activity scope also
-  feeds And-1. (Note: the divergence is *not* cosmetic — the Core `StateFlow` is hot,
+  with `stateIn(scope, WhileSubscribed(5000))`. The result is two different sharing
+  lifetimes for three equivalent screens (per-VM scope vs the shared graph scope —
+  since And-1 that shared scope is the process-lifetime `appScope`, no longer the
+  Activity `lifecycleScope`). Pick one pattern. (Note: the divergence is *not*
+  cosmetic — the Core `StateFlow` is hot,
   but each interactor re-wraps it with cold `.map { … }.distinctUntilChanged()`
   operators (see `TasksInteractor.kt`), so the cold chain is re-collected per collector
   and the choice of where to `stateIn` genuinely changes the collection lifetime.)

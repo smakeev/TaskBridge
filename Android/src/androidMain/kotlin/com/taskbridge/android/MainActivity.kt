@@ -14,34 +14,26 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.lifecycle.lifecycleScope
-import com.taskbridge.android.handlers.reminders.AndroidReminderHandler
 import com.taskbridge.android.repository.NavigationDestinationMessageScopeId
-import com.taskbridge.android.repository.RepositoriesStorage
 import com.taskbridge.android.ui.LocalRepositoriesStorage
 import com.taskbridge.android.ui.navigation.RemindersNavigationScreen
 import com.taskbridge.android.ui.navigation.TasksNavigationScreen
 import com.taskbridge.android.ui.navigation.TemplatesNavigationScreen
 import com.taskbridge.android.utils.isCurrentRoot
-import com.taskbridge.core.TaskBridge
-import com.taskbridge.core.handlers.CorePlatformHandlers
 import com.taskbridge.core.models.messages.AppMessageKeys
 import com.taskbridge.core.models.messages.Toastable
 import com.taskbridge.core.models.navigation.AppTab
 import com.taskbridge.core.models.navigation.NavigationDestinationMessage
-import com.taskbridge.core.storage.tasks.PlatformDependencies
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
-        val platformDependencies = PlatformDependencies(this)
-        val platformHandlers = CorePlatformHandlers(
-            reminderHandler = AndroidReminderHandler(this)
-        )
-        val taskBridge = TaskBridge(platformDependencies, platformHandlers)
-        val repositoriesStorage = RepositoriesStorage.create(taskBridge, lifecycleScope)
+
+        // The graph is owned by the Application so it survives configuration changes
+        // (rotation) instead of being rebuilt — and its scope cancelled — on every
+        // onCreate. See Audit And-1.
+        val repositoriesStorage = (application as TaskBridgeApplication).repositoriesStorage
 
         setContent {
             val scope = rememberCoroutineScope()
