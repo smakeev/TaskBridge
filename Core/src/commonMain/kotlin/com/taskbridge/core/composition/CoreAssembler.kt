@@ -35,42 +35,35 @@ internal class CoreAssembler(
     val stories = UserStoriesContainer()
     val useCases = UseCaseContainer()
 
+    // The token carries use-case *factories*, not instances, so it holds no domain
+    // state and is safe to share. `useCases.get(...)` already builds a fresh use case
+    // per call, so each interactor that calls a factory owns its own use case.
     private val coreAccess: CoreAccess by lazy {
         CoreAccess(
             dependencies = InteractorDependencies(
-                selectTabUseCase = useCases.get(this, SelectTabUseCase::class),
-                pushNavigationUseCase = useCases.get(this, PushNavigationUseCase::class),
-                navigationObserverUseCase = useCases.get(this, NavigationStateObserverUseCase::class),
-                tasksUseCase = useCases.get(this, TasksUseCase::class),
-                templatesUseCase = useCases.get(this, TaskTemplatesUseCase::class),
-                remindersUseCase = useCases.get(this, RemindersUseCase::class),
-                messagesUseCase = useCases.get(this, MessagesUseCase::class)
+                selectTabUseCase = { useCases.get(this, SelectTabUseCase::class) },
+                pushNavigationUseCase = { useCases.get(this, PushNavigationUseCase::class) },
+                navigationObserverUseCase = { useCases.get(this, NavigationStateObserverUseCase::class) },
+                tasksUseCase = { useCases.get(this, TasksUseCase::class) },
+                templatesUseCase = { useCases.get(this, TaskTemplatesUseCase::class) },
+                remindersUseCase = { useCases.get(this, RemindersUseCase::class) },
+                messagesUseCase = { useCases.get(this, MessagesUseCase::class) }
             )
         )
     }
 
-    // Lazy interactor instances. Each is built on first access and reused
-    // thereafter. They live on the assembler so the same TaskBridge always
-    // hands out the same interactor instances regardless of how many times
-    // [coreRepositoryAssembler] is invoked.
-    private val lazyNavigationInteractor: Lazy<NavigationInteractor> =
-        lazy { NavigationInteractor(coreAccess) }
-    private val lazyTasksInteractor: Lazy<TasksInteractor> =
-        lazy { TasksInteractor(coreAccess) }
-    private val lazyTemplatesInteractor: Lazy<TemplatesInteractor> =
-        lazy { TemplatesInteractor(coreAccess) }
-    private val lazyRemindersInteractor: Lazy<RemindersInteractor> =
-        lazy { RemindersInteractor(coreAccess) }
-    private val lazyMessagesInteractor: Lazy<MessagesInteractor> =
-        lazy { MessagesInteractor(coreAccess) }
-
+    // Interactors are built fresh on every call. They are stateless wrappers (their
+    // flow properties are cold definitions with no construction-time side effects),
+    // and the platform repository that calls the factory owns the result — so an
+    // interactor (and the use cases/stories it builds) lives only as long as the
+    // repository needs it, while the underlying services stay singletons.
     fun coreRepositoryAssembler(): CoreRepositoryAssembler {
         return CoreRepositoryAssembler(
-            navigationInteractor = { lazyNavigationInteractor.value },
-            tasksInteractor = { lazyTasksInteractor.value },
-            templatesInteractor = { lazyTemplatesInteractor.value },
-            remindersInteractor = { lazyRemindersInteractor.value },
-            messagesInteractor = { lazyMessagesInteractor.value }
+            navigationInteractor = { NavigationInteractor(coreAccess) },
+            tasksInteractor = { TasksInteractor(coreAccess) },
+            templatesInteractor = { TemplatesInteractor(coreAccess) },
+            remindersInteractor = { RemindersInteractor(coreAccess) },
+            messagesInteractor = { MessagesInteractor(coreAccess) }
         )
     }
 }

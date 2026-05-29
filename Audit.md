@@ -25,7 +25,19 @@ Each finding has a stable id, a **severity** hint, and a **status**.
 - **🗒️ Closed-Resolution "…"** — closed without a code fix, with a resolution note
   (e.g. *won't fix*, *by design*, *deferred*); the reason is quoted inline.
 
-Every finding currently carries `🔓 Open`. A short summary is at the bottom.
+**Machine-readable format** (so `audit.html` can parse, filter, and sort these). Each
+finding is a top-level bullet whose title line is exactly:
+
+```
+- **<ID> <severity-emoji> · <status-emoji> <Status>[ "<resolution>"] — <Title>**
+```
+
+where `<ID>` matches `(Common|iOS|And|Core)-<n>` (the prefix is the type; `And` =
+Android). The body lines that follow may use two markers, rendered in bold:
+**`Fix:`** for what was changed, and **`Comment:`** for rationale/notes. Open
+`audit.html` in this folder to read it with type/status filters and sorting.
+
+A short summary is at the bottom.
 
 ---
 
@@ -67,26 +79,47 @@ aligned.
   closure.
   → Platform entries: **iOS-7**, **And-7**.
 
+- **Common-4 🟡 · 🔓 Open — Domain-object lifetime model: only services are singletons; everything above is on-demand; caches live in Core managers.**
+  Agreed model for the whole stack: the Core **services** (the AppState boxes in
+  `CoreServiceLocator`) are process-lifetime singletons; **repositories, interactors,
+  use cases, and stories** are stateless and created on demand, living only as long as
+  a screen/VM needs them. Any **cache or mutable state belongs in a Core
+  manager/service, never in a repository**, so repositories stay freely recreatable —
+  this is what makes the iOS weak-share (**iOS-1**) safe.
+  **Comment:** Rollout status — the Core foundation is done (interactors/use cases are
+  no longer pinned, **Core-12**), and iOS already conforms via its weak
+  `RepositoriesStorage`. **Remaining:** Android still pins repositories with `by lazy`
+  in `RepositoriesStorage.kt`, so it cannot release them; give it the same
+  release-on-demand sharing as iOS (a weak / ref-counted cache, or per-VM ownership)
+  to finish the model. The "caches → Core manager" rule should also be documented so a
+  future caching repository doesn't reintroduce per-repository state.
+
 ---
 
 ## iOS
 
 ### Retain cycles & memory / object lifetime
 
-- **iOS-1 🟠 · 🔓 Open — `RepositoriesStorage` caches repositories with `weak var`.**
+- **iOS-1 🟠 · 🗒️ Closed-Resolution "By design: repositories are stateless scoped wrappers; weak sharing is intentional and safe. See Common-4." — `RepositoriesStorage` caches repositories with `weak var`.**
   `RepositoriesStorage.swift` stores every repository in a `private weak var …Ref`
-  and recreates it in the getter when the ref is `nil`. Repositories are therefore
-  *not* stable singletons: as soon as no view/VM strongly holds one (e.g. you leave
-  the Tasks screen and the `TasksViewModel` deinits), the impl is deallocated, and the
-  next access builds a brand-new `…RepositoryImpl` with a fresh `createStream`
-  bridge (a new `Task` + `Collector` + `AsyncStream`). The Core source flows are hot
-  conflated `StateFlow`s (`BaseStatefulService` exposes `MutableStateFlow.asStateFlow()`),
-  so the *re-subscription itself is cheap* — it just replays the current value, with no
-  recomputation at the service. The real problem is therefore identity instability and
-  churn, not performance: object identity silently changes, every recreate tears down
-  and rebuilds the Swift⇄Kotlin bridge, and this diverges from Android (`by lazy` =
-  strong singletons, see `RepositoriesStorage.kt`). Recommendation: hold the
-  repositories strongly (lazy `let`-style cache) so identity is stable.
+  and recreates it in the getter when the ref is `nil`. A repository is therefore
+  shared while at least one view/VM strongly holds it, and is deallocated and rebuilt
+  on next demand once all holders are gone (with a fresh `createStream` bridge — a new
+  `Task` + `Collector` + `AsyncStream`). The Core source flows are hot conflated
+  `StateFlow`s (`BaseStatefulService` exposes `MutableStateFlow.asStateFlow()`), so
+  re-subscription just replays the current value with no recomputation at the service.
+  **Comment:** This is the intended scoped-lifetime model, not a defect. Repositories —
+  and now their interactors / use cases / stories (see **Core-12**) — are stateless
+  wrappers; all real state lives in the long-lived Core services/managers. So an
+  instance carries nothing worth preserving: recreating one is free and observably
+  identical, and object identity is never relied upon (every instance delegates to the
+  same singleton service). Weak caching gives exactly the wanted behaviour — share one
+  instance while screens are alive, drop it when none are, recreate on demand — so a
+  repository used only by a pushed screen dies with that screen instead of being pinned
+  forever. The one rule that keeps this safe is that **caches/state never live in a
+  repository; they live in a Core manager** (see **Common-4**): a repository that needs
+  state holds a reference to that manager, so it still owns nothing that recreation
+  could lose.
 
 - **iOS-2 🟡 · 🔓 Open — `ScrollBlinkHighlighter.uncancellableSleep` outlives its `.task`.**
   `scrollToAndBlink` is launched from `.task` modifiers in `TasksRootView` /
@@ -166,11 +199,11 @@ aligned.
 ### Object lifetime / lifecycle
 
 - **And-1 🔴 · ✅ Closed-Fixed — Dependency graph rebuilt on every configuration change.**
-  `MainActivity.onCreate` used to construct `PlatformDependencies`, `TaskBridge`, and
+  `MainActivity.onCreate` constructs `PlatformDependencies`, `TaskBridge`, and
   `RepositoriesStorage.create(taskBridge, lifecycleScope)` directly. On rotation /
   config change `onCreate` runs again, so the *entire* Core graph, all repositories,
-  and all flow subscriptions were torn down and rebuilt, and the `stateIn` scope
-  (`lifecycleScope`) was cancelled — dropping in-memory state and re-doing Core
+  and all flow subscriptions are torn down and rebuilt, and the `stateIn` scope
+  (`lifecycleScope`) is cancelled — dropping in-memory state and re-doing Core
   bootstrap on every rotation.
   **Fix:** the graph now lives in a new `TaskBridgeApplication : Application` (registered
   via `android:name=".TaskBridgeApplication"`), which builds `TaskBridge` +
@@ -265,13 +298,13 @@ Analysis of the shared Kotlin module only (`Core/src/commonMain/**`).
 ### Race conditions
 
 - **Core-1 🔴 · ✅ Closed-Fixed — Non-atomic `updateState` raced by two coroutines in `RemindersService`.**
-  `BaseStatefulService.updateState` did `_data.value = reducer(_data.value)` — a
+  `BaseStatefulService.updateState` does `_data.value = reducer(_data.value)` — a
   non-atomic read-modify-write. `TasksService`, `AppStateService`, and
   `RemoteResourceService` only mutate from the single command-loop coroutine, so they
-  are safe. **`RemindersService` was not:** it calls `updateState` both from the command
+  are safe. **`RemindersService` is not:** it calls `updateState` both from the command
   loop (`performLoad` / `performSchedule` / `performAction`) *and* from the separate
   `reminderEvents.events().collect { … }` coroutine, both running on
-  `Dispatchers.Default` (multi-threaded). Two concurrent RMWs could lose updates — e.g. a
+  `Dispatchers.Default` (multi-threaded). Two concurrent RMWs lose updates — e.g. a
   command’s `it.copy(isLoading = true)` built from a stale snapshot clobbers a
   freshly-arrived `reminders` list, so reminders transiently vanish or `isLoading`
   sticks.
@@ -371,43 +404,64 @@ Analysis of the shared Kotlin module only (`Core/src/commonMain/**`).
   already plans a `LocalizationHandler`; until then, format on the platform or pass
   structured data up.
 
+- **Core-12 🟠 · ✅ Closed-Fixed — Domain layer pinned for the whole process by the composition root.**
+  `CoreAssembler` holds each interactor in a `lazy { … }` property and
+  `InteractorDependencies` holds use-case *instances* (built once via the `by lazy`
+  `coreAccess`), so interactors and use cases are process-lifetime singletons —
+  preventing the on-demand domain-object lifetime the platforms want (see **Common-4**
+  and **iOS-1**).
+  **Fix:** `InteractorDependencies` now holds use-case *factories* (`() -> UseCase`),
+  `CoreAccess` is a stateless factory bundle that can stay shared, the five
+  `lazyXInteractor` properties are removed, and `coreRepositoryAssembler()` constructs
+  a fresh interactor per call. Each interactor builds the use cases it needs and owns
+  them, so an interactor + its use cases/stories live only as long as the repository
+  that built it; services stay singletons. `:Core:` and `:Android:` compile.
+  **Comment:** Safe because interactors are pure stateless wrappers — their `…State` /
+  `activePath` properties are *cold* flow definitions with no construction-time side
+  effects, so creating one starts nothing and re-creating one observes the same hot
+  service `StateFlow`. `useCases.get(...)` and the story getters already build a fresh
+  instance per call, so the whole chain above the services is now genuinely transient
+  and released with the repository.
+
 ---
 
 ## Summary
 
-**iOS.** The biggest structural issue is **iOS-1**: repositories are cached with
-`weak var`, so they are not stable singletons and silently re-subscribe to Core
-flows. The two-task tab feedback loop (**iOS-3**) and the asymmetric navigation guard
-(**iOS-4**) are the most likely user-visible bugs. The rest is cleanup: heavy
-duplication between the Tasks root/details screens (**iOS-7**), duplicated/clumsy
-`TaskItem` construction (**iOS-8**), a misleading no-op `TaskTreeRowsView` (**iOS-9**),
-`print` logging (**iOS-10**), and minor naming/convention drift (**iOS-11/12**, plus
-dead `forceLoadTemplates` **iOS-5**).
+**Resolved so far.** **Core-1** (reminder state data race) ✅, **Core-12** (domain
+layer un-pinned for on-demand lifetime) ✅, **And-1** (graph rebuilt on rotation) ✅,
+and **iOS-1** 🗒️ closed as by-design (weak scoped lifetime; the model is now written
+up in **Common-4**, with the Android side of it still open).
 
-**Android.** The standout is **And-1**: the whole dependency graph is rebuilt in
-`MainActivity.onCreate`, so it is recreated on every rotation — this should move to
-`Application`/a retained scope, and it interacts with the inconsistent state-sharing
-in **And-2**. **And-3** (hand-counted scroll offsets) and **And-4** (progress and
-container share an icon) are concrete defects, and **And-10** means Android reminders
-never actually fire. Cleanup parallels iOS: `ViewModelProvider.Factory` boilerplate
-(**And-6**), duplicated scroll/dialog wiring (**And-7**), the duplicate
-`refreshTemplates`/dead `forceLoadTemplates` (**And-5**), inline FQNs (**And-9**), and
-a per-recomposition tree walk (**And-11**).
+**iOS.** The remaining likely user-visible bugs are the two-way tab feedback loop
+(**iOS-3**) and the asymmetric navigation guard (**iOS-4** → **Common-1**). The rest is
+cleanup: duplication between the Tasks root/details screens (**iOS-7** → **Common-3**),
+duplicated/clumsy `TaskItem` construction (**iOS-8**), a misleading no-op
+`TaskTreeRowsView` (**iOS-9**), `print` logging (**iOS-10**), and minor
+naming/convention drift (**iOS-11/12**, plus dead `forceLoadTemplates` **iOS-5** →
+**Common-2**).
 
-**Core.** The headline is **Core-1**: `RemindersService` mutates a non-atomic
-`updateState` from two concurrent coroutines on `Dispatchers.Default`, a genuine data
-race that can drop reminder updates — the one-line fix is `MutableStateFlow.update {}`
-in the base service. The other concurrency issues are **Core-2** (initial reminder
-sync lost on a replay-0 bus race) and **Core-3** (read-then-clear of the navigation
-message bypasses the actor and isn’t atomic). **Core-4** (remote loads serialized by
-the command loop) and **Core-9** (no `close()` → scope + `HttpClient` leak, which
-compounds And-1) are the notable design issues; the rest is type-safety around the
-untyped `RemoteResourceEntry.data` (**Core-7**), over-eager “containers”/layering
+**Android.** With **And-1** fixed (graph hoisted to `TaskBridgeApplication`), the
+remaining concrete defects are **And-3** (hand-counted scroll offsets) and **And-4**
+(progress and container share an icon), and **And-10** means Android reminders never
+actually fire. The state-sharing inconsistency (**And-2**) is still open. Cleanup
+parallels iOS: `ViewModelProvider.Factory` boilerplate (**And-6**), duplicated
+scroll/dialog wiring (**And-7** → **Common-3**), the duplicate `refreshTemplates`/dead
+`forceLoadTemplates` (**And-5** → **Common-2**), inline FQNs (**And-9**), and a
+per-recomposition tree walk (**And-11**).
+
+**Core.** With **Core-1** and **Core-12** fixed, the open concurrency issues are
+**Core-2** (initial reminder sync lost on a replay-0 bus race) and **Core-3**
+(read-then-clear of the navigation message bypasses the actor and isn’t atomic).
+**Core-4** (remote loads serialized by the command loop) and **Core-9** (no `close()`
+→ scope + `HttpClient` leak) are the notable design issues; the rest is type-safety
+around the untyped `RemoteResourceEntry.data` (**Core-7**), the pass-through layering
 (**Core-8**), and cleanup (**Core-5/6/10/11**).
 
-**Common (cross-platform).** Three findings are the *same* defect on both apps and are
-described once in the **Common** section: **Common-1** (asymmetric nav-message guard,
-= iOS-4 / And-8), **Common-2** (dead `forceLoadTemplates` + a “refresh” that just calls
-`loadTemplates`, = iOS-5 / And-5), and **Common-3** (root-vs-details screen
-duplication, = iOS-7 / And-7). Fix each once per platform but in lockstep so the two
-stay aligned; note Common-2 also ties into Core’s TTL-gated `RemoteResourceCommand.Load`.
+**Common (cross-platform).** Items described once in the **Common** section:
+**Common-1** (asymmetric nav-message guard, = iOS-4 / And-8), **Common-2** (dead
+`forceLoadTemplates` + a “refresh” that just calls `loadTemplates`, = iOS-5 / And-5),
+**Common-3** (root-vs-details screen duplication, = iOS-7 / And-7), and **Common-4**
+(the domain-object lifetime model behind the iOS-1 resolution — services are the only
+singletons, everything above is on-demand, caches live in Core managers; Core + iOS
+done, Android weak-share remaining). Fix the duplications once per platform but in
+lockstep; note Common-2 also ties into Core’s TTL-gated `RemoteResourceCommand.Load`.

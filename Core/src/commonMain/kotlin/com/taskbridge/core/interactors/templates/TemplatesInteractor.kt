@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.map
 public class TemplatesInteractor public constructor(
     accessToken: CoreAccess
 ) {
-    private val useCase = accessToken.dependencies.templatesUseCase
+    private val useCase = accessToken.dependencies.templatesUseCase()
     /**
      * Observable flow of the current templates state.
      */

@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.map
 public class RemindersInteractor public constructor(
     accessToken: CoreAccess
 ) {
-    private val useCase = accessToken.dependencies.remindersUseCase
+    private val useCase = accessToken.dependencies.remindersUseCase()
     /**
      * Observable flow of the current reminders state.
      */

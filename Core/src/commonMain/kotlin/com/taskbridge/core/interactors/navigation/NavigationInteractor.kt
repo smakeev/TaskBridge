@@ -18,9 +18,9 @@ import kotlinx.coroutines.flow.Flow
 public class NavigationInteractor public constructor(
     accessToken: CoreAccess
 ) {
-    private val selectTabUseCase = accessToken.dependencies.selectTabUseCase
-    private val pushNavigationUseCase = accessToken.dependencies.pushNavigationUseCase
-    private val observerUseCase = accessToken.dependencies.navigationObserverUseCase
+    private val selectTabUseCase = accessToken.dependencies.selectTabUseCase()
+    private val pushNavigationUseCase = accessToken.dependencies.pushNavigationUseCase()
+    private val observerUseCase = accessToken.dependencies.navigationObserverUseCase()
     public val activePath: Flow<NavigationPath?> = observerUseCase.subscribeOnActivePath()
     public val currentTab: Flow<AppTab> = observerUseCase.subscribeOnCurrentTab()
     public val overlay: Flow<NavigationOverlay?> = observerUseCase.subscribeOnOverlay()

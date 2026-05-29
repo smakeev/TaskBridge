@@ -22,7 +22,7 @@ import kotlin.reflect.KClass
 public class MessagesInteractor public constructor(
     accessToken: CoreAccess
 ) {
-    private val messagesUseCase = accessToken.dependencies.messagesUseCase
+    private val messagesUseCase = accessToken.dependencies.messagesUseCase()
     private val supportedInboundTypes: Set<KClass<out AppMessage>> = emptySet()
 
     private data class OutboundMapper(

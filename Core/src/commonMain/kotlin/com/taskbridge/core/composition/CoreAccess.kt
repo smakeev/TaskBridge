@@ -21,6 +21,13 @@ import com.taskbridge.core.usecases.templates.TaskTemplatesUseCase
  * outside the Core module; the public interactor constructor signature stays
  * clean (`(accessToken: CoreAccess)`) without exposing any internal types.
  *
+ * The bundle holds use-case *factories* (`() -> UseCase`), not instances, so the
+ * token itself is a stateless, shareable bundle of constructors. Each interactor
+ * calls the factory it needs once and owns the resulting use case, which keeps the
+ * whole domain layer above the services on-demand: a use case lives as long as the
+ * interactor that built it, which lives as long as the repository that built it.
+ * Only the services (the AppState boxes) are long-lived singletons.
+ *
  * This is the iOS-friendly counterpart to making the interactor constructors
  * themselves `internal`: Kotlin/Native exports `internal` declarations into
  * the Obj-C header with mangled names, so the token gate is the more
@@ -31,11 +38,11 @@ public class CoreAccess internal constructor(
 )
 
 internal class InteractorDependencies(
-    val selectTabUseCase: SelectTabUseCase,
-    val pushNavigationUseCase: PushNavigationUseCase,
-    val navigationObserverUseCase: NavigationStateObserverUseCase,
-    val tasksUseCase: TasksUseCase,
-    val templatesUseCase: TaskTemplatesUseCase,
-    val remindersUseCase: RemindersUseCase,
-    val messagesUseCase: MessagesUseCase
+    val selectTabUseCase: () -> SelectTabUseCase,
+    val pushNavigationUseCase: () -> PushNavigationUseCase,
+    val navigationObserverUseCase: () -> NavigationStateObserverUseCase,
+    val tasksUseCase: () -> TasksUseCase,
+    val templatesUseCase: () -> TaskTemplatesUseCase,
+    val remindersUseCase: () -> RemindersUseCase,
+    val messagesUseCase: () -> MessagesUseCase
 )

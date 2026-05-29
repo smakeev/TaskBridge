@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.map
 public class TasksInteractor public constructor(
     accessToken: CoreAccess
 ) {
-    private val useCase = accessToken.dependencies.tasksUseCase
+    private val useCase = accessToken.dependencies.tasksUseCase()
     /**
      * Observable flow of the current tasks state.
      */
