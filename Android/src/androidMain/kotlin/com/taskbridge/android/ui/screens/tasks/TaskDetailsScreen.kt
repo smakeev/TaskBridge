@@ -46,6 +46,7 @@ import com.taskbridge.android.repository.MessagesRepository
 import com.taskbridge.android.repository.NavigationDestinationMessageScopeId
 import com.taskbridge.android.repository.RemindersRepository
 import com.taskbridge.android.repository.TasksRepository
+import com.taskbridge.android.ui.components.ScrollBlinkEffects
 import com.taskbridge.android.ui.components.rememberScrollBlinkHighlighter
 import com.taskbridge.android.ui.tasks.TasksViewModel
 import com.taskbridge.core.models.messages.AppMessage
@@ -83,40 +84,34 @@ fun TaskDetailsScreen(
     val highlighter = rememberScrollBlinkHighlighter()
     val listState = rememberLazyListState()
 
-    suspend fun scrollToAndBlink(childTaskId: String) {
-        highlighter.scrollToAndBlink(
-            id = childTaskId,
-            listState = listState,
-            findItemIndex = {
-                currentTask?.children
-                    ?.indexOfFirst { child -> child.id.value == childTaskId }
-                    ?.takeIf { index -> index >= 0 }
-                    ?.let { index -> index + taskDetailsChildrenOffset }
-                    ?: -1
-            }
-        )
-    }
-
     LaunchedEffect(Unit) {
         viewModel.loadTasks()
     }
 
-    LaunchedEffect(viewModel, taskId) {
-        viewModel.observeTaskCreatedMessages().collect { message ->
-            val taskAdded = message as? AppMessage.TaskAdded ?: return@collect
-            if (taskAdded.parentPath.lastOrNull()?.value != taskId) return@collect
-            scrollToAndBlink(taskAdded.id.value)
+    ScrollBlinkEffects(
+        highlighter = highlighter,
+        listState = listState,
+        scopeId = NavigationDestinationMessageScopeId.TaskDetails(taskId).scopeId,
+        createdMessages = { viewModel.observeTaskCreatedMessages() },
+        createdTargetId = { message ->
+            (message as? AppMessage.TaskAdded)
+                ?.takeIf { it.parentPath.lastOrNull()?.value == taskId }
+                ?.id?.value
+        },
+        consumePending = { scope -> viewModel.consumeNavigationDestinationMessage(scope) },
+        pendingTargetId = { message ->
+            (message as? NavigationDestinationMessage.TaskElement)
+                ?.takeIf { it.parentPath.lastOrNull() == taskId }
+                ?.taskId
+        },
+        findItemIndex = { id ->
+            currentTask?.children
+                ?.indexOfFirst { child -> child.id.value == id }
+                ?.takeIf { index -> index >= 0 }
+                ?.let { index -> index + taskDetailsChildrenOffset }
+                ?: -1
         }
-    }
-
-    LaunchedEffect(Unit) {
-        val message = viewModel.consumeNavigationDestinationMessage(
-            NavigationDestinationMessageScopeId.TaskDetails(taskId).scopeId
-        )
-        val taskMessage = message as? NavigationDestinationMessage.TaskElement ?: return@LaunchedEffect
-        if (taskMessage.parentPath.lastOrNull() != taskId) return@LaunchedEffect
-        scrollToAndBlink(taskMessage.taskId)
-    }
+    )
 
     Scaffold(
         topBar = {
@@ -266,27 +261,20 @@ fun TaskDetailsScreen(
         )
     }
 
-    taskToRename?.let { renameTask ->
-        TaskRenameDialog(
-            task = renameTask,
-            onDismiss = { taskToRename = null },
-            onSave = { title ->
-                viewModel.renameTask(renameTask, title)
-                taskToRename = null
-            }
-        )
-    }
-
-    taskForReminder?.let { reminderTask ->
-        TaskReminderDialog(
-            task = reminderTask,
-            onDismiss = { taskForReminder = null },
-            onSave = { title, body, type, minutesFromNow ->
-                viewModel.createReminder(reminderTask, title, body, type, minutesFromNow)
-                taskForReminder = null
-            }
-        )
-    }
+    TaskActionDialogs(
+        taskToRename = taskToRename,
+        onRenameDismiss = { taskToRename = null },
+        onRename = { task, title ->
+            viewModel.renameTask(task, title)
+            taskToRename = null
+        },
+        taskForReminder = taskForReminder,
+        onReminderDismiss = { taskForReminder = null },
+        onReminder = { task, title, body, type, minutesFromNow ->
+            viewModel.createReminder(task, title, body, type, minutesFromNow)
+            taskForReminder = null
+        }
+    )
 }
 
 private const val taskDetailsChildrenOffset = 2

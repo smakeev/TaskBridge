@@ -46,7 +46,7 @@ A short summary is at the bottom.
 These are the same defect on both platforms; fix them in lockstep to keep the apps
 aligned.
 
-- **Common-1 🟠 · 🔓 Open — Asymmetric “already here?” check when routing app messages.**
+- **Common-1 🟠 · 🗒️ Closed-Resolution "By design: while the user is on the Tasks tab we never force-navigate on an external add — only toast; blink-in-place is the visible screen's job. The proposed isCurrentRoot symmetry would wrongly yank the user out of TaskDetails." — Asymmetric “already here?” check when routing app messages.**
   Both platforms handle the `reminderCreated` / `taskAdded` app messages in the same
   place (iOS `ContentView.handleNavigationMessage`, Android
   `MainActivity`’s message-collect block). The two branches use *different*
@@ -54,9 +54,26 @@ aligned.
   the task branch early-returns on merely `fetchCurrentTab() == .tasks`. So if you are
   on the Tasks tab but inside `TaskDetails` (not the root) when a root task is added
   elsewhere, the task branch returns early, never sets the navigation-destination
-  message, and the “scroll & blink” highlight is lost when you return to the root. The
-  task branch should test the *root* (`isCurrentRoot(.tasks)` /
-  `isCurrentRoot(AppTab.TASKS)`), matching the reminder branch.
+  message, and the “scroll & blink” highlight is lost when you return to the root.
+  **Comment:** This coarser whole-tab check is *intentional*, not a defect — do **not**
+  "fix" it to `isCurrentRoot` in a future audit. The `handleNavigationMessage` branch
+  governs only *forced* navigation (`pullToRoot` + `selectTab`); the in-place blink is a
+  separate mechanism. The rule we want: **while the user is anywhere on the Tasks tab —
+  root or a (possibly deep) `TaskDetails` — an external add must never force-navigate;
+  we only toast.** Pulling a user out of a details view to the root on every external
+  add would be disruptive. Blink-in-place, *when the added task's parent scope is the
+  screen currently shown*, is already handled by each screen's live
+  `observeTaskCreatedMessages` (root: `parentPath.isEmpty`; details:
+  `parentPath.last == taskId`, so it already works at arbitrary depth). Adopting
+  `isCurrentRoot(.tasks)` would set the pending message and `pullToRoot` + `selectTab`
+  from `TaskDetails`, yanking the user to the root — the opposite of what we want.
+  Forced navigation-with-blink is reserved for *actions* (the not-on-Tasks-tab `else`
+  path, e.g. applying a template from the Templates tab). The structural reason the
+  asymmetry is fine: the Tasks tab has root **+ deep details**, whereas reminder
+  *creation* always surfaces at the reminders root, so for reminders `isCurrentRoot` is
+  effectively a whole-tab check anyway. (Next step, out of scope here: when templates
+  can target a non-root parent, the *action* will carry full-path navigation to that
+  parent's details — still not this passive handler.)
   → Platform entries: **iOS-4**, **And-8**.
 
 - **Common-2 🟡 · 🔓 Open — `forceLoadTemplates()` is dead; “refresh” just calls `loadTemplates()`.**
@@ -68,15 +85,30 @@ aligned.
   or remove the unused API on both sides.
   → Platform entries: **iOS-5**, **And-5**.
 
-- **Common-3 🟠 · 🔓 Open — Tasks *root* and *details* screens are ~90% duplicated.**
-  On each platform the root list screen and the details screen carry near-identical
+- **Common-3 🟠 · ✅ Closed-Fixed — Tasks *root* and *details* screens are ~90% duplicated.**
+  On each platform the root list screen and the details screen carried near-identical
   logic: observe-task-created, consume-pending-navigation-message, wait/scroll/blink to
   a row, and the rename + reminder (+ subtask) dialog/sheet wiring. iOS:
   `TasksRootView` vs `TaskDetailsView`. Android: `TasksRootScreen` vs
-  `TaskDetailsScreen` (the scroll/blink + header-offset helper is duplicated into
-  `RemindersRootScreen` too). Extract a shared highlight/scroll coordinator and a
-  shared dialog/sheet block per platform, parameterized by scope id and a “find item”
-  closure.
+  `TaskDetailsScreen` (the scroll/blink + header-offset helper was duplicated into
+  `RemindersRootScreen` too).
+  **Fix:** extracted a *domain-neutral* highlight/scroll coordinator shared by the
+  Tasks root/details **and** the Reminders screens (the blink behaviour is generic —
+  it is not task-specific), plus a task-only dialog/sheet block. The coordinator is
+  parameterized by scope id, a created-message → target-id mapper (also where a screen
+  filters to its own scope / gates on "am I current"), a pending-message → target-id
+  mapper, and a "find item" closure.
+  *iOS*: `UIComponents/ScrollBlinkBinding.swift` — a `ScrollBlinkBinding` config + a
+  `.scrollBlinkHighlighting(…)` `View` modifier (the two `.task` observers feeding
+  `ScrollBlinkHighlighter`); `TasksRootView`, `TaskDetailsView`, and `RemindersRootView`
+  each just supply a `blinkBinding`. The task-only rename/reminder sheets live in
+  `TaskActionSheets.swift` (`.taskActionSheets(…)`).
+  *Android*: `ScrollBlinkEffects` + `rememberScrollToAndBlink` + `leadingItemsOffset`
+  (all in `components/ScrollBlinkSupport.kt`), with the task-only `TaskActionDialogs`
+  in its own file; `TasksRootScreen`, `TaskDetailsScreen`, and `RemindersRootScreen`
+  all drive the shared `ScrollBlinkEffects`. Builds: `:Android:` and the iOS
+  `TaskBridge` scheme both compile. (The hand-counted header offsets the find-item
+  closures still use are tracked separately as **And-3**.)
   → Platform entries: **iOS-7**, **And-7**.
 
 - **Common-4 🟡 · 🔓 Open — Domain-object lifetime model: only services are singletons; everything above is on-demand; caches live in Core managers.**
@@ -142,7 +174,7 @@ aligned.
 
 ### Logical problems
 
-- **iOS-4 🟠 · 🔓 Open — Asymmetric “already here?” check in `handleNavigationMessage`.**
+- **iOS-4 🟠 · 🗒️ Closed-Resolution "By design — see Common-1." — Asymmetric “already here?” check in `handleNavigationMessage`.**
   → See **Common-1**. iOS location: `ContentView.handleNavigationMessage`
   (`isCurrentRoot(.reminders)` vs `fetchCurrentTab() == .tasks`).
 
@@ -159,10 +191,12 @@ aligned.
 
 ### Reuse / duplication (possible generics)
 
-- **iOS-7 🟠 · 🔓 Open — `TasksRootView` and `TaskDetailsView` are ~90% duplicated.**
+- **iOS-7 🟠 · ✅ Closed-Fixed — `TasksRootView` and `TaskDetailsView` are ~90% duplicated.**
   → See **Common-3**. iOS location: `TasksRootView` vs `TaskDetailsView`
   (`observeTaskCreatedMessages`, `consumePendingNavigationMessage`, `waitForTaskRow`,
-  the rename/reminder sheets, the highlight `onChange` block).
+  the rename/reminder sheets, the highlight `onChange` block). Now share the generic
+  `ScrollBlinkBinding` / `.scrollBlinkHighlighting` (also used by `RemindersRootView`)
+  plus task-only `.taskActionSheets`.
 
 - **iOS-8 🟡 · 🔓 Open — Duplicated `TaskItem` construction.**
   `TasksViewModel.newTask(...)` and `TaskTemplatesViewModel.makeTask(...)` both
@@ -253,7 +287,7 @@ aligned.
   (identical `try/catch` body to `loadTemplates()`, wired to the “Refresh” button) and
   the unused `TaskTemplatesRepository.forceLoadTemplates()`.
 
-- **And-8 🟠 · 🔓 Open — Same asymmetric navigation check as iOS-4.**
+- **And-8 🟠 · 🗒️ Closed-Resolution "By design — see Common-1." — Same asymmetric navigation check as iOS-4.**
   → See **Common-1**. Android location: `MainActivity` message-collect block
   (`isCurrentRoot(AppTab.REMINDERS)` vs `fetchCurrentTab() == AppTab.TASKS`).
 
@@ -270,10 +304,12 @@ aligned.
   `TemplatesRootDestination`. Replace with a single reusable helper, e.g.
   `viewModelFactory { TasksViewModel(...) }` (androidx) or a small inline generic.
 
-- **And-7 🟠 · 🔓 Open — Screen-level scroll/blink/dialog wiring duplicated.**
+- **And-7 🟠 · ✅ Closed-Fixed — Screen-level scroll/blink/dialog wiring duplicated.**
   → See **Common-3**. Android location: `TasksRootScreen` vs `TaskDetailsScreen`
   (rename/reminder/subtask dialogs); the `scrollToAndBlink` + `findItemIndex` +
-  header-offset pattern is also duplicated into `RemindersRootScreen`.
+  header-offset pattern is also duplicated into `RemindersRootScreen`. Now share the
+  generic `ScrollBlinkEffects` + `rememberScrollToAndBlink` + `leadingItemsOffset`
+  (`ScrollBlinkSupport.kt`, used by all three screens) and task-only `TaskActionDialogs`.
 
 ### Bad practices
 
@@ -429,13 +465,19 @@ Analysis of the shared Kotlin module only (`Core/src/commonMain/**`).
 
 **Resolved so far.** **Core-1** (reminder state data race) ✅, **Core-12** (domain
 layer un-pinned for on-demand lifetime) ✅, **And-1** (graph rebuilt on rotation) ✅,
-and **iOS-1** 🗒️ closed as by-design (weak scoped lifetime; the model is now written
-up in **Common-4**, with the Android side of it still open).
+**iOS-1** 🗒️ closed as by-design (weak scoped lifetime; the model is now written
+up in **Common-4**, with the Android side of it still open), **Common-1**
+(= **iOS-4** / **And-8**) 🗒️ closed as by-design (the coarser whole-tab guard on the
+task branch is intentional — on the Tasks tab we toast but never force-navigate; the
+proposed `isCurrentRoot` symmetry would wrongly yank the user out of `TaskDetails`),
+and **Common-3** (= **iOS-7** / **And-7**) ✅ (root/details screen duplication extracted
+into shared highlight/scroll + dialog helpers per platform).
 
-**iOS.** The remaining likely user-visible bugs are the two-way tab feedback loop
-(**iOS-3**) and the asymmetric navigation guard (**iOS-4** → **Common-1**). The rest is
-cleanup: duplication between the Tasks root/details screens (**iOS-7** → **Common-3**),
-duplicated/clumsy `TaskItem` construction (**iOS-8**), a misleading no-op
+**iOS.** The remaining likely user-visible bug is the two-way tab feedback loop
+(**iOS-3**) — the asymmetric navigation guard (**iOS-4** → **Common-1**) is now closed
+as by-design. The rest is
+cleanup: duplication between the Tasks root/details screens (**iOS-7** → **Common-3**)
+is now fixed; remaining are duplicated/clumsy `TaskItem` construction (**iOS-8**), a misleading no-op
 `TaskTreeRowsView` (**iOS-9**), `print` logging (**iOS-10**), and minor
 naming/convention drift (**iOS-11/12**, plus dead `forceLoadTemplates` **iOS-5** →
 **Common-2**).
@@ -444,8 +486,8 @@ naming/convention drift (**iOS-11/12**, plus dead `forceLoadTemplates` **iOS-5**
 remaining concrete defects are **And-3** (hand-counted scroll offsets) and **And-4**
 (progress and container share an icon), and **And-10** means Android reminders never
 actually fire. The state-sharing inconsistency (**And-2**) is still open. Cleanup
-parallels iOS: `ViewModelProvider.Factory` boilerplate (**And-6**), duplicated
-scroll/dialog wiring (**And-7** → **Common-3**), the duplicate `refreshTemplates`/dead
+parallels iOS: `ViewModelProvider.Factory` boilerplate (**And-6**); the duplicated
+scroll/dialog wiring (**And-7** → **Common-3**) is now fixed; the duplicate `refreshTemplates`/dead
 `forceLoadTemplates` (**And-5** → **Common-2**), inline FQNs (**And-9**), and a
 per-recomposition tree walk (**And-11**).
 
@@ -458,9 +500,12 @@ around the untyped `RemoteResourceEntry.data` (**Core-7**), the pass-through lay
 (**Core-8**), and cleanup (**Core-5/6/10/11**).
 
 **Common (cross-platform).** Items described once in the **Common** section:
-**Common-1** (asymmetric nav-message guard, = iOS-4 / And-8), **Common-2** (dead
+**Common-1** (asymmetric nav-message guard, = iOS-4 / And-8) 🗒️ closed as by-design —
+on the Tasks tab we toast but never force-navigate, blink-in-place is the visible
+screen's job; **Common-2** (dead
 `forceLoadTemplates` + a “refresh” that just calls `loadTemplates`, = iOS-5 / And-5),
-**Common-3** (root-vs-details screen duplication, = iOS-7 / And-7), and **Common-4**
+**Common-3** (root-vs-details screen duplication, = iOS-7 / And-7) ✅ now extracted into
+shared per-platform helpers; and **Common-4**
 (the domain-object lifetime model behind the iOS-1 resolution — services are the only
 singletons, everything above is on-demand, caches live in Core managers; Core + iOS
 done, Android weak-share remaining). Fix the duplications once per platform but in

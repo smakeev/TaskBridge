@@ -1,25 +1,39 @@
-# XO Arena iOS Shell
+# TaskBridge — iOS app
 
-This is a thin shell for the iOS application.
+SwiftUI app that consumes the shared Kotlin Multiplatform `Core` module (exposed as the
+`TaskBridgeCore` framework).
 
-## Setup
-1. Open Xcode and create a new Project (App).
-2. Use SwiftUI for the UI.
-3. Add the KMP modules as a framework or use CocoaPods/Swift Package Manager.
-4. In your `ContentView.swift`, you can bridge the Compose UI using a `UIViewControllerRepresentable`.
+## Project generation (XcodeGen)
 
-Example:
-```swift
-import SwiftUI
-import UI
+The Xcode project is **generated** from [`project.yml`](project.yml) by
+[XcodeGen](https://github.com/yonsm/XcodeGen) and is **not** committed to git
+(`TaskBridge.xcodeproj/` is gitignored). `project.yml` is the single source of truth, so
+there is never a stale or hand-edited `.pbxproj` to drift out of sync.
 
-struct ComposeView: UIViewControllerRepresentable {
-    func makeUIViewController(context: Context) -> UIViewController {
-        return Main_iosKt.MainViewController()
-    }
+### First-time setup
 
-    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
-}
+```sh
+brew install xcodegen      # one-time, if you don't have it
+cd iOS
+xcodegen generate          # creates TaskBridge.xcodeproj from project.yml
+open TaskBridge.xcodeproj   # then build/run the TaskBridge scheme
 ```
 
-(Note: You need to expose a `MainViewController` in the `UI` module's `iosMain` source set.)
+The project's pre-build step runs `./gradlew :Core:embedAndSignAppleFrameworkForXcode`,
+so building from Xcode also (re)builds the KMP framework — no separate step needed.
+
+### When to re-run `xcodegen generate`
+
+`sources: [TaskBridge]` globs the whole `TaskBridge/` folder, so XcodeGen picks up any
+`.swift` file under it automatically. Just re-run `xcodegen generate` after you **add,
+remove, or move** files (or change anything in `project.yml`). Never edit
+`TaskBridge.xcodeproj` by hand — it will be overwritten on the next generate.
+
+### Command-line build
+
+```sh
+cd iOS
+xcodegen generate
+xcodebuild -project TaskBridge.xcodeproj -scheme TaskBridge \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
+```

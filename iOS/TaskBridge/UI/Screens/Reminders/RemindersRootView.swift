@@ -67,12 +67,11 @@ private struct RemindersRootContent: View {
                 .padding(16)
             }
             .background(Color(.systemGroupedBackground))
-            .task {
-                await observeReminderCreatedMessages(scrollProxy: proxy)
-            }
-            .task {
-                await consumePendingNavigationMessage(scrollProxy: proxy)
-            }
+            .scrollBlinkHighlighting(
+                highlighter: highlighter,
+                binding: blinkBinding,
+                scrollProxy: proxy
+            )
             .onChange(of: viewModel.state.reminders.map(\.reminderIdValue)) { _ in
                 guard let highlightedReminderId = highlighter.highlightedId else { return }
                 withAnimation(.easeInOut(duration: 0.35)) {
@@ -156,22 +155,14 @@ private struct RemindersRootContent: View {
         }
     }
 
-    private func observeReminderCreatedMessages(scrollProxy: ScrollViewProxy) async {
-        for await message in viewModel.observeReminderCreatedMessages() {
-            guard let reminderCreated = message as? AppMessageReminderCreated else { continue }
-            await highlighter.scrollToAndBlink(id: reminderCreated.id.value, scrollProxy: scrollProxy)
-        }
-    }
-
-    private func consumePendingNavigationMessage(scrollProxy: ScrollViewProxy) async {
-        guard let message = try? await viewModel.consumeNavigationDestinationMessage(
-            scopeId: NavigationDestinationMessageScopeId.remindersRoot.scopeId
-        ),
-              let elementId = message as? NavigationDestinationMessageElementId else {
-            return
-        }
-
-        await highlighter.scrollToAndBlink(id: elementId.value, scrollProxy: scrollProxy)
+    private var blinkBinding: ScrollBlinkBinding {
+        ScrollBlinkBinding(
+            scopeId: NavigationDestinationMessageScopeId.remindersRoot.scopeId,
+            createdMessages: { viewModel.observeReminderCreatedMessages() },
+            createdTargetId: { ($0 as? AppMessageReminderCreated)?.id.value },
+            consumePending: { try await viewModel.consumeNavigationDestinationMessage(scopeId: $0) },
+            pendingTargetId: { ($0 as? NavigationDestinationMessageElementId)?.value }
+        )
     }
 
     private func formatReminderTime(_ triggerAtMillis: Int64) -> String {

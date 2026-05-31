@@ -41,6 +41,8 @@ import com.taskbridge.android.repository.MessagesRepository
 import com.taskbridge.android.repository.NavigationDestinationMessageScopeId
 import com.taskbridge.android.repository.RemindersRepository
 import com.taskbridge.android.repository.TasksRepository
+import com.taskbridge.android.ui.components.ScrollBlinkEffects
+import com.taskbridge.android.ui.components.leadingItemsOffset
 import com.taskbridge.android.ui.components.rememberScrollBlinkHighlighter
 import com.taskbridge.android.ui.tasks.TasksViewModel
 import com.taskbridge.core.models.messages.AppMessage
@@ -75,46 +77,33 @@ fun TasksRootScreen(
     val listState = rememberLazyListState()
     val currentState by rememberUpdatedState(state)
 
-    suspend fun scrollToAndBlink(taskId: String) {
-        highlighter.scrollToAndBlink(
-            id = taskId,
-            listState = listState,
-            findItemIndex = {
-                currentState.tasks.indexOfFirst { task -> task.id.value == taskId }
-                    .takeIf { index -> index >= 0 }
-                    ?.let { index -> index + tasksListHeaderOffset(currentState) }
-                    ?: -1
-            }
-        )
-    }
-
     LaunchedEffect(Unit) {
         viewModel.loadTasks()
     }
 
-    LaunchedEffect(viewModel) {
-        viewModel.observeTaskCreatedMessages().collect { message ->
-            val taskAdded = message as? AppMessage.TaskAdded ?: return@collect
-            if (taskAdded.parentPath.isNotEmpty()) return@collect
-            val taskId = taskAdded.id.value
-            scrollToAndBlink(taskId)
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        val message = viewModel.consumeNavigationDestinationMessage(
-            NavigationDestinationMessageScopeId.TasksRoot.scopeId
-        )
-        val taskId = when (message) {
-            is NavigationDestinationMessage.ElementId -> message.value
-            is NavigationDestinationMessage.TaskElement -> {
-                if (message.parentPath.isNotEmpty()) return@LaunchedEffect
-                message.taskId
+    ScrollBlinkEffects(
+        highlighter = highlighter,
+        listState = listState,
+        scopeId = NavigationDestinationMessageScopeId.TasksRoot.scopeId,
+        createdMessages = { viewModel.observeTaskCreatedMessages() },
+        createdTargetId = { message ->
+            (message as? AppMessage.TaskAdded)?.takeIf { it.parentPath.isEmpty() }?.id?.value
+        },
+        consumePending = { scope -> viewModel.consumeNavigationDestinationMessage(scope) },
+        pendingTargetId = { message ->
+            when (message) {
+                is NavigationDestinationMessage.ElementId -> message.value
+                is NavigationDestinationMessage.TaskElement ->
+                    if (message.parentPath.isEmpty()) message.taskId else null
             }
-            null -> return@LaunchedEffect
+        },
+        findItemIndex = { id ->
+            currentState.tasks.indexOfFirst { task -> task.id.value == id }
+                .takeIf { index -> index >= 0 }
+                ?.let { index -> index + tasksListHeaderOffset(currentState) }
+                ?: -1
         }
-        scrollToAndBlink(taskId)
-    }
+    )
 
     Scaffold(
         floatingActionButton = {
@@ -214,36 +203,28 @@ fun TasksRootScreen(
         )
     }
 
-    taskToRename?.let { task ->
-        TaskRenameDialog(
-            task = task,
-            onDismiss = { taskToRename = null },
-            onSave = { newTitle ->
-                viewModel.renameTask(task, newTitle)
-                taskToRename = null
-            }
-        )
-    }
-
-    taskForReminder?.let { task ->
-        TaskReminderDialog(
-            task = task,
-            onDismiss = { taskForReminder = null },
-            onSave = { title, body, type, minutesFromNow ->
-                viewModel.createReminder(task, title, body, type, minutesFromNow)
-                taskForReminder = null
-            }
-        )
-    }
+    TaskActionDialogs(
+        taskToRename = taskToRename,
+        onRenameDismiss = { taskToRename = null },
+        onRename = { task, newTitle ->
+            viewModel.renameTask(task, newTitle)
+            taskToRename = null
+        },
+        taskForReminder = taskForReminder,
+        onReminderDismiss = { taskForReminder = null },
+        onReminder = { task, title, body, type, minutesFromNow ->
+            viewModel.createReminder(task, title, body, type, minutesFromNow)
+            taskForReminder = null
+        }
+    )
 }
 
-private fun tasksListHeaderOffset(state: com.taskbridge.core.usecases.tasks.TasksState): Int {
-    var offset = 1
-    if (state.isLoading && state.tasks.isEmpty()) offset += 1
-    if (state.errorMessage != null) offset += 1
-    if (!state.isLoading && state.tasks.isEmpty()) offset += 1
-    return offset
-}
+private fun tasksListHeaderOffset(state: com.taskbridge.core.usecases.tasks.TasksState): Int =
+    leadingItemsOffset(
+        showLoading = state.isLoading && state.tasks.isEmpty(),
+        showError = state.errorMessage != null,
+        showEmpty = !state.isLoading && state.tasks.isEmpty()
+    )
 
 @Composable
 private fun EmptyTasksState() {

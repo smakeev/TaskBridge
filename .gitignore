@@ -20,6 +20,9 @@ proguard-project.txt
 project.properties
 
 # iOS
+# The Xcode project is generated from iOS/project.yml by XcodeGen — never commit it.
+# Run `cd iOS && xcodegen generate` after cloning or changing the file layout.
+*.xcodeproj/
 *.xcworkspace
 xcuserdata/
 DerivedData/

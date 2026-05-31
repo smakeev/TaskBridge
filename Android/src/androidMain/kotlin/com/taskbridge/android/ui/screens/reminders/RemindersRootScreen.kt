@@ -39,6 +39,8 @@ import com.taskbridge.android.repository.MessagesRepository
 import com.taskbridge.android.repository.NavigationDestinationMessageScopeId
 import com.taskbridge.android.repository.NavigationRepository
 import com.taskbridge.android.repository.RemindersRepository
+import com.taskbridge.android.ui.components.ScrollBlinkEffects
+import com.taskbridge.android.ui.components.leadingItemsOffset
 import com.taskbridge.android.ui.components.rememberScrollBlinkHighlighter
 import com.taskbridge.android.ui.reminders.RemindersViewModel
 import com.taskbridge.core.models.messages.AppMessage
@@ -71,37 +73,25 @@ fun RemindersRootScreen(
     val listState = rememberLazyListState()
     val currentState by rememberUpdatedState(state)
 
-    suspend fun scrollToAndBlink(reminderId: String) {
-        highlighter.scrollToAndBlink(
-            id = reminderId,
-            listState = listState,
-            findItemIndex = {
-                currentState.reminders.indexOfFirst { reminder -> reminder.id.value == reminderId }
-                    .takeIf { index -> index >= 0 }
-                    ?.let { index -> index + remindersListHeaderOffset(currentState) }
-                    ?: -1
-            }
-        )
-    }
-
     LaunchedEffect(Unit) {
         viewModel.loadReminders()
     }
 
-    LaunchedEffect(viewModel) {
-        viewModel.observeReminderCreatedMessages().collect { message ->
-            val reminderId = (message as? AppMessage.ReminderCreated)?.id?.value ?: return@collect
-            scrollToAndBlink(reminderId)
+    ScrollBlinkEffects(
+        highlighter = highlighter,
+        listState = listState,
+        scopeId = NavigationDestinationMessageScopeId.RemindersRoot.scopeId,
+        createdMessages = { viewModel.observeReminderCreatedMessages() },
+        createdTargetId = { message -> (message as? AppMessage.ReminderCreated)?.id?.value },
+        consumePending = { scope -> viewModel.consumeNavigationDestinationMessage(scope) },
+        pendingTargetId = { message -> (message as? NavigationDestinationMessage.ElementId)?.value },
+        findItemIndex = { id ->
+            currentState.reminders.indexOfFirst { reminder -> reminder.id.value == id }
+                .takeIf { index -> index >= 0 }
+                ?.let { index -> index + remindersListHeaderOffset(currentState) }
+                ?: -1
         }
-    }
-
-    LaunchedEffect(Unit) {
-        val message = viewModel.consumeNavigationDestinationMessage(
-            NavigationDestinationMessageScopeId.RemindersRoot.scopeId
-        )
-        val reminderId = (message as? NavigationDestinationMessage.ElementId)?.value ?: return@LaunchedEffect
-        scrollToAndBlink(reminderId)
-    }
+    )
 
     LazyColumn(
         state = listState,
@@ -165,13 +155,12 @@ fun RemindersRootScreen(
     }
 }
 
-private fun remindersListHeaderOffset(state: com.taskbridge.core.usecases.reminders.RemindersState): Int {
-    var offset = 1
-    if (state.isLoading && state.reminders.isEmpty()) offset += 1
-    if (state.errorMessage != null) offset += 1
-    if (!state.isLoading && state.reminders.isEmpty()) offset += 1
-    return offset
-}
+private fun remindersListHeaderOffset(state: com.taskbridge.core.usecases.reminders.RemindersState): Int =
+    leadingItemsOffset(
+        showLoading = state.isLoading && state.reminders.isEmpty(),
+        showError = state.errorMessage != null,
+        showEmpty = !state.isLoading && state.reminders.isEmpty()
+    )
 
 @Composable
 private fun EmptyRemindersState() {

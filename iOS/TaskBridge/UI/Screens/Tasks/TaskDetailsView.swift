@@ -103,12 +103,11 @@ private struct TaskDetailsContent: View {
                 }
                 .padding(16)
             }
-            .task {
-                await observeTaskCreatedMessages(scrollProxy: proxy)
-            }
-            .task {
-                await consumePendingNavigationMessage(scrollProxy: proxy)
-            }
+            .scrollBlinkHighlighting(
+                highlighter: highlighter,
+                binding: blinkBinding,
+                scrollProxy: proxy
+            )
             .onChange(of: task?.children.map(\.taskIdValue) ?? []) { _ in
                 guard let highlightedTaskId = highlighter.highlightedId else { return }
                 withAnimation(.easeInOut(duration: 0.35)) {
@@ -127,34 +126,11 @@ private struct TaskDetailsContent: View {
                 }
             }
         }
-        .sheet(isPresented: Binding(
-            get: { taskToRename != nil },
-            set: { if !$0 { taskToRename = nil } }
-        )) {
-            if let task = taskToRename {
-                TaskRenameSheet(task: task) { title in
-                    viewModel.renameTask(task: task, newTitle: title)
-                    taskToRename = nil
-                }
-            }
-        }
-        .sheet(isPresented: Binding(
-            get: { taskForReminder != nil },
-            set: { if !$0 { taskForReminder = nil } }
-        )) {
-            if let task = taskForReminder {
-                TaskReminderSheet(task: task) { title, body, type, minutesFromNow in
-                    viewModel.createReminder(
-                        task: task,
-                        title: title,
-                        body: body,
-                        type: type,
-                        minutesFromNow: minutesFromNow
-                    )
-                    taskForReminder = nil
-                }
-            }
-        }
+        .taskActionSheets(
+            viewModel: viewModel,
+            taskToRename: $taskToRename,
+            taskForReminder: $taskForReminder
+        )
     }
 
     private var header: some View {
@@ -229,48 +205,37 @@ private struct TaskDetailsContent: View {
         viewModel.openTaskDetails(task)
     }
 
-    private func observeTaskCreatedMessages(scrollProxy: ScrollViewProxy) async {
-        for await message in viewModel.observeTaskCreatedMessages() {
-            guard let taskAdded = message as? AppMessageTaskAdded,
-                  taskAdded.parentPath.last?.value == taskId else {
-                continue
+    private var blinkBinding: ScrollBlinkBinding {
+        ScrollBlinkBinding(
+            scopeId: NavigationDestinationMessageScopeId.taskDetails(parentId: taskId).scopeId,
+            createdMessages: { viewModel.observeTaskCreatedMessages() },
+            createdTargetId: { message in
+                guard let taskAdded = message as? AppMessageTaskAdded,
+                      taskAdded.parentPath.last?.value == taskId else {
+                    return nil
+                }
+                guard (try? await viewModel.isCurrentTaskDetails(taskId: taskId)) == true else { return nil }
+                return taskAdded.id.value
+            },
+            consumePending: { try await viewModel.consumeNavigationDestinationMessage(scopeId: $0) },
+            pendingTargetId: { message in
+                guard let taskElement = message as? NavigationDestinationMessageTaskElement,
+                      taskElement.parentPath.last == taskId else {
+                    return nil
+                }
+                return taskElement.taskId
+            },
+            waitForItem: { id in
+                for _ in 0..<40 {
+                    let task = viewModel.state.findTask(id: TaskId(value: taskId))
+                    if task?.children.contains(where: { $0.taskIdValue == id }) == true {
+                        return true
+                    }
+                    try? await Task.sleep(nanoseconds: 50_000_000)
+                }
+                return false
             }
-            guard (try? await viewModel.isCurrentTaskDetails(taskId: taskId)) == true else { continue }
-            await highlighter.scrollToAndBlink(
-                id: taskAdded.id.value,
-                scrollProxy: scrollProxy,
-                waitForItem: waitForTaskRow
-            )
-        }
-    }
-
-    private func consumePendingNavigationMessage(scrollProxy: ScrollViewProxy) async {
-        guard let message = try? await viewModel.consumeNavigationDestinationMessage(
-            scopeId: NavigationDestinationMessageScopeId.taskDetails(parentId: taskId).scopeId
-        ),
-              let taskElement = message as? NavigationDestinationMessageTaskElement,
-              taskElement.parentPath.last == taskId else {
-            return
-        }
-
-        await highlighter.scrollToAndBlink(
-            id: taskElement.taskId,
-            scrollProxy: scrollProxy,
-            presentationDelayNanoseconds: 1_200_000_000,
-            waitForItem: waitForTaskRow
         )
-    }
-
-    @MainActor
-    private func waitForTaskRow(id: String) async -> Bool {
-        for _ in 0..<40 {
-            let task = viewModel.state.findTask(id: TaskId(value: taskId))
-            if task?.children.contains(where: { $0.taskIdValue == id }) == true {
-                return true
-            }
-            try? await Task.sleep(nanoseconds: 50_000_000)
-        }
-        return false
     }
 
 }
