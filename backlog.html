@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TaskBridge Backlog</title>
+<style>
+  :root {
+    --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --border:#2a2f3a;
+    --fg:#e6e8ee; --muted:#9aa3b2; --accent:#6ea8fe;
+    --sev-high:#ff5d5d; --sev-med:#ffa94d; --sev-low:#ffe066;
+    --st-open:#6ea8fe; --st-fixed:#51cf66; --st-done:#38d9a9; --st-res:#b197fc;
+    --ep-task:#6ea8fe; --ep-story:#b197fc; --ep-bug:#ff8787;
+    --ep-closed:#8a93a3;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+         font:14px/1.55 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
+  header { position:sticky; top:0; z-index:5; background:var(--panel);
+           border-bottom:1px solid var(--border); padding:14px 20px; }
+  h1 { margin:0 0 10px; font-size:18px; }
+  h1 a { text-decoration:none; color:var(--fg); }
+  .controls { display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+  .controls label { color:var(--muted); font-size:12px; margin-right:6px; }
+  select, input[type=search] {
+    background:var(--panel2); color:var(--fg); border:1px solid var(--border);
+    border-radius:7px; padding:6px 9px; font-size:13px; }
+  input[type=search] { min-width:200px; }
+  .count { color:var(--muted); font-size:12px; margin-left:auto; }
+  main { padding:18px 20px 60px; max-width:1000px; margin:0 auto; }
+
+  /* view toggle */
+  .views { display:inline-flex; gap:4px; padding:3px; border:1px solid var(--border);
+           border-radius:999px; background:var(--panel2); }
+  .views button { border:0; background:transparent; color:var(--muted); cursor:pointer;
+                  font:inherit; font-weight:600; font-size:12px; padding:5px 12px;
+                  border-radius:999px; }
+  .views button[aria-pressed="true"] { background:var(--accent); color:#0b0d11; }
+
+  .group-h { margin:22px 0 8px; font-size:13px; letter-spacing:.04em;
+             text-transform:uppercase; color:var(--muted);
+             border-bottom:1px solid var(--border); padding-bottom:6px; }
+  .card { background:var(--panel); border:1px solid var(--border); border-left-width:4px;
+          border-radius:10px; padding:12px 14px; margin:10px 0; }
+  .card.sev-high { border-left-color:var(--sev-high); }
+  .card.sev-med  { border-left-color:var(--sev-med); }
+  .card.sev-low  { border-left-color:var(--sev-low); }
+  .card.ep-task  { border-left-color:var(--ep-task); }
+  .card.ep-story { border-left-color:var(--ep-story); }
+  .card.ep-bug   { border-left-color:var(--ep-bug); }
+  .card.closed   { opacity:.72; }
+  .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .id { font-weight:700; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+  .title { font-weight:600; }
+  .badge { font-size:11px; padding:2px 8px; border-radius:999px; border:1px solid var(--border);
+           white-space:nowrap; }
+  .type { color:var(--muted); }
+  .sev-high .pill-sev,.b-high { color:var(--sev-high); border-color:var(--sev-high); }
+  .sev-med  .pill-sev,.b-med  { color:var(--sev-med);  border-color:var(--sev-med); }
+  .sev-low  .pill-sev,.b-low  { color:var(--sev-low);  border-color:var(--sev-low); }
+  .b-open  { color:var(--st-open);  border-color:var(--st-open); }
+  .b-fixed { color:var(--st-fixed); border-color:var(--st-fixed); }
+  .b-done  { color:var(--st-done);  border-color:var(--st-done); }
+  .b-res   { color:var(--st-res);   border-color:var(--st-res); }
+  .b-task  { color:var(--ep-task);  border-color:var(--ep-task); }
+  .b-story { color:var(--ep-story); border-color:var(--ep-story); }
+  .b-bug   { color:var(--ep-bug);   border-color:var(--ep-bug); }
+  .b-eopen { color:var(--st-open);  border-color:var(--st-open); }
+  .b-eclosed { color:var(--ep-closed); border-color:var(--ep-closed); }
+  .resolution { color:var(--st-res); font-style:italic; margin:6px 0 0; font-size:13px; }
+  .body { margin-top:8px; color:#cfd4de; }
+  .body p { margin:7px 0; }
+  .body code { background:var(--panel2); padding:1px 5px; border-radius:5px;
+               font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12.5px; }
+  .body strong { color:var(--fg); }
+  .body p.fix { border-left:3px solid var(--st-fixed); padding-left:10px; }
+  .body p.comment { border-left:3px solid var(--accent); padding-left:10px; color:var(--muted); }
+
+  /* epic refs / links */
+  a { color:var(--accent); }
+  .epic-ref { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-weight:700;
+              text-decoration:none; border-bottom:1px dotted currentColor; }
+  .epic-ref::after { content:" ↗"; font-weight:400; font-size:.85em; opacity:.75; }
+  .meta { margin-top:8px; display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+          color:var(--muted); font-size:12px; }
+  .chip { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:11px;
+          padding:1px 7px; border-radius:999px; border:1px solid var(--border); color:var(--muted); }
+
+  /* epic detail header */
+  .detail-bar { margin-bottom:10px; }
+  .epic-head { background:var(--panel); border:1px solid var(--border); border-radius:12px;
+               padding:16px 18px; margin:6px 0 18px; border-left-width:4px; }
+  .epic-head.ep-task  { border-left-color:var(--ep-task); }
+  .epic-head.ep-story { border-left-color:var(--ep-story); }
+  .epic-head.ep-bug   { border-left-color:var(--ep-bug); }
+  .epic-head .row { gap:10px; }
+  .epic-head h2 { margin:10px 0 0; font-size:20px; }
+  .epic-head .body { margin-top:10px; }
+  .sec-h { margin:24px 0 6px; font-size:13px; letter-spacing:.04em; text-transform:uppercase;
+           color:var(--muted); }
+  .empty { color:var(--muted); font-style:italic; margin:8px 0; }
+
+  .notice { background:#3a2a12; border:1px solid #6b4f1f; color:#ffd8a8;
+            padding:12px 14px; border-radius:8px; margin:14px 0; }
+  .notice input { margin-top:8px; }
+  .hide { display:none; }
+</style>
+</head>
+<body>
+<header>
+  <h1><a href="?" data-nav>TaskBridge Backlog</a> <span class="count" id="src"></span></h1>
+  <div class="controls" id="listControls">
+    <span class="views" role="group" aria-label="View">
+      <button type="button" data-view="all">All</button>
+      <button type="button" data-view="epics">Epics</button>
+      <button type="button" data-view="triaged">Triaged</button>
+    </span>
+    <span><label>Type</label>
+      <select id="fType">
+        <option value="">All</option><option>Common</option><option>iOS</option>
+        <option>Android</option><option>Core</option>
+      </select></span>
+    <span><label>Status</label>
+      <select id="fStatus">
+        <option value="">All</option><option>Open</option><option>Closed-Fixed</option>
+        <option>Closed-Done</option><option>Closed-Resolution</option>
+      </select></span>
+    <span><label>Severity</label>
+      <select id="fSev">
+        <option value="">All</option><option>High</option><option>Med</option><option>Low</option>
+      </select></span>
+    <span><label>Sort by</label>
+      <select id="sort">
+        <option value="type">Type</option><option value="status">Status</option>
+        <option value="severity">Severity</option><option value="id">ID</option>
+      </select></span>
+    <input type="search" id="q" placeholder="filter text…">
+    <span class="count" id="count"></span>
+  </div>
+  <div class="detail-bar hide" id="detailBar">
+    <a href="?" data-nav>← Back to backlog</a>
+  </div>
+</header>
+<main>
+  <div id="notice" class="notice hide">
+    Couldn’t auto-load <code>Backlog.md</code> (browsers block <code>file://</code> reads).
+    Pick it, or run <code>python3 -m http.server</code> in this folder and open
+    <code>backlog.html</code> over http (needed for the per-epic tabs to load).
+    <br><input type="file" id="file" accept=".md,text/markdown,text/plain">
+  </div>
+  <div id="list"></div>
+</main>
+<script>
+const SEV = { "🔴":{l:"High",r:0,c:"high"}, "🟠":{l:"Med",r:1,c:"med"}, "🟡":{l:"Low",r:2,c:"low"} };
+const STAT = {
+  "Open":{r:0,c:"open",e:"🔓"}, "Closed-Fixed":{r:1,c:"fixed",e:"✅"},
+  "Closed-Done":{r:2,c:"done",e:"☑️"}, "Closed-Resolution":{r:3,c:"res",e:"🗒️"}
+};
+const TYPE_ORDER = { "Common":0, "iOS":1, "Android":2, "Core":3 };
+const typeOf = p => p === "And" ? "Android" : p;
+
+const EPIC_TYPE = {
+  "TASK":{l:"Task", e:"🛠️", c:"task", r:0},
+  "STORY":{l:"Story", e:"✨", c:"story", r:1},
+  "BUG":{l:"Bug", e:"🐞", c:"bug", r:2}
+};
+const EPIC_STAT = { "Open":{c:"eopen", e:"🔓"}, "Closed":{c:"eclosed", e:"🔒"} };
+
+// Title grammar (see Backlog.md "Machine-readable format"). Findings carry a severity
+// emoji; epics carry a type emoji and an Open/Closed status. The two regexes are
+// mutually exclusive, so a line is either a finding or an epic, never both.
+const TITLE = /^- \*\*([A-Za-z]+)-(\d+)\s+(🔴|🟠|🟡)\s+·\s+\S+\s+(Open|Closed-Fixed|Closed-Done|Closed-Resolution)(?:\s+"([^"]*)")?\s+—\s+(.*?)\*\*\s*$/u;
+const ETITLE = /^- \*\*(TASK|STORY|BUG)-(\d+)\s+\S+\s+·\s+\S+\s+(Open|Closed)\s+—\s+(.*?)\*\*\s*$/u;
+// Membership ref, stored on the child: "→ Epic: <PARENT-ID>".
+const REF = /^\s*→\s*Epic:\s*([A-Za-z]+-\d+)\s*$/u;
+
+function parse(md){
+  const lines = md.split(/\r?\n/);
+  const items = [], epics = [];
+  let cur = null, curKind = null;
+  const flush = () => {
+    if (!cur) return;
+    cur.bodyRaw = cur.bodyLines.join("\n").trim();
+    delete cur.bodyLines;
+    (curKind === "epic" ? epics : items).push(cur);
+    cur = null; curKind = null;
+  };
+  for (const line of lines){
+    const mi = line.match(TITLE);
+    const me = mi ? null : line.match(ETITLE);
+    if (mi){
+      flush();
+      curKind = "item";
+      cur = { kind:"triaged", type: typeOf(mi[1]), id: mi[1]+"-"+mi[2], num:+mi[2],
+              sev:mi[3], status:mi[4], resolution:mi[5]||"", title:mi[6],
+              parent:null, bodyLines:[] };
+    } else if (me){
+      flush();
+      curKind = "epic";
+      cur = { kind:"epic", etype: me[1], id: me[1]+"-"+me[2], num:+me[2],
+              status: me[3], title: me[4], parent:null, bodyLines:[] };
+    } else if (cur){
+      if (/^(#{2,3}\s|---\s*$)/.test(line)){ flush(); continue; }
+      const r = line.match(REF);
+      if (r){ cur.parent = r[1]; continue; }
+      cur.bodyLines.push(line.replace(/^ {0,2}/, ""));
+    }
+  }
+  flush();
+  return { items, epics };
+}
+
+function esc(s){ return s.replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+function inline(s){
+  return esc(s)
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+}
+function renderBody(raw){
+  if (!raw) return "";
+  return raw.split(/\n\s*\n/).map(par => {
+    const oneLine = par.replace(/\n/g, " ").trim();
+    let cls = "";
+    if (/^\*\*Fix:\*\*/.test(oneLine)) cls = " class=\"fix\"";
+    else if (/^\*\*Comment:\*\*/.test(oneLine)) cls = " class=\"comment\"";
+    return `<p${cls}>${inline(oneLine)}</p>`;
+  }).join("");
+}
+
+// --- state ---------------------------------------------------------------
+let DATA = { items:[], epics:[] };
+let byId = new Map();         // id -> node (finding or epic)
+let childrenOf = new Map();   // epicId -> [child nodes]
+
+function index(){
+  byId = new Map();
+  childrenOf = new Map();
+  for (const ep of DATA.epics){ byId.set(ep.id, ep); childrenOf.set(ep.id, []); }
+  for (const it of DATA.items) byId.set(it.id, it);
+  for (const node of [...DATA.items, ...DATA.epics]){
+    if (node.parent && childrenOf.has(node.parent)) childrenOf.get(node.parent).push(node);
+  }
+}
+
+// --- shared renderers ----------------------------------------------------
+function epicRefLink(id){
+  const ep = byId.get(id);
+  const label = ep ? `${EPIC_TYPE[ep.etype].e} ${id}` : id;
+  // Plain same-tab link (data-nav → client-side routing). Right-click / ⌘-click still
+  // opens it in a new tab via the browser's own menu.
+  return `<a class="epic-ref" data-nav href="?epic=${encodeURIComponent(id)}">${label}</a>`;
+}
+
+function findingCard(it){
+  const sev = SEV[it.sev], st = STAT[it.status];
+  return `<div class="card sev-${sev.c}${it.status.startsWith("Closed")?" closed":""}">
+    <div class="row">
+      <span class="badge type">${it.type}</span>
+      <span class="id">${it.id}</span>
+      <span class="badge pill-sev b-${sev.c}">${it.sev} ${sev.l}</span>
+      <span class="badge b-${st.c}">${st.e} ${it.status}</span>
+      <span class="title">${inline(it.title)}</span>
+    </div>
+    ${it.resolution ? `<div class="resolution">“${esc(it.resolution)}”</div>` : ""}
+    <div class="body">${renderBody(it.bodyRaw)}</div>
+    ${it.parent ? `<div class="meta">Part of ${epicRefLink(it.parent)}</div>` : ""}
+  </div>`;
+}
+
+function epicCard(ep){
+  const t = EPIC_TYPE[ep.etype], st = EPIC_STAT[ep.status];
+  const kids = childrenOf.get(ep.id) || [];
+  const subEpics = kids.filter(k => k.kind === "epic");
+  const triaged  = kids.filter(k => k.kind === "triaged");
+  const contains = `${triaged.length} triaged · ${subEpics.length} sub-epic${subEpics.length===1?"":"s"}`;
+  return `<div class="card ep-${t.c}${ep.status==="Closed"?" closed":""}">
+    <div class="row">
+      <span class="badge b-${t.c}">${t.e} ${t.l}</span>
+      <span class="id">${epicRefLink(ep.id)}</span>
+      <span class="badge b-${st.c}">${st.e} ${ep.status}</span>
+      <span class="title">${inline(ep.title)}</span>
+    </div>
+    <div class="body">${renderBody(ep.bodyRaw)}</div>
+    <div class="meta">
+      ${ep.parent ? `Part of ${epicRefLink(ep.parent)} ·` : ""}
+      Contains ${contains}
+      ${subEpics.map(s => epicRefLink(s.id)).join(" ")}
+    </div>
+  </div>`;
+}
+
+// --- selection / filtering (shared by the list and the epic detail) ------
+const ITEM_CMP = {
+  type:     (a,b)=> TYPE_ORDER[a.type]-TYPE_ORDER[b.type] || a.num-b.num,
+  status:   (a,b)=> STAT[a.status].r-STAT[b.status].r || TYPE_ORDER[a.type]-TYPE_ORDER[b.type] || a.num-b.num,
+  severity: (a,b)=> SEV[a.sev].r-SEV[b.sev].r || TYPE_ORDER[a.type]-TYPE_ORDER[b.type] || a.num-b.num,
+  id:       (a,b)=> TYPE_ORDER[a.type]-TYPE_ORDER[b.type] || a.num-b.num,
+};
+function filters(){
+  return { view: state.view, q: qIn.value.trim().toLowerCase(),
+           type: fT.value, status: fS.value, sev: fSv.value, sort: sortSel.value };
+}
+// Epics only have Open/Closed; treat any Closed-* finding-status selection as "closed".
+function epicPassesStatus(f, ep){
+  if (!f.status) return true;
+  return f.status === "Open" ? ep.status === "Open" : ep.status === "Closed";
+}
+function selectEpics(epics, f){
+  return epics
+    .filter(ep => epicPassesStatus(f, ep))
+    .filter(ep => !f.q || `${ep.id} ${ep.title} ${ep.bodyRaw}`.toLowerCase().includes(f.q))
+    .sort((a,b)=> EPIC_TYPE[a.etype].r-EPIC_TYPE[b.etype].r || a.num-b.num);
+}
+function selectItems(items, f){
+  return items.filter(it =>
+    (!f.type   || it.type === f.type) &&
+    (!f.status || it.status === f.status) &&
+    (!f.sev    || SEV[it.sev].l === f.sev) &&
+    (!f.q || `${it.id} ${it.title} ${it.bodyRaw} ${it.resolution}`.toLowerCase().includes(f.q))
+  ).sort(ITEM_CMP[f.sort]);
+}
+const groupH = label => `<div class="group-h">${label}</div>`;
+const emptyP = text => `<p class="empty">${text}</p>`;
+function dimControls(f){
+  // type / severity / sort only apply to triaged items
+  [fT, fSv, sortSel].forEach(el => el.parentElement.style.opacity = f.view === "epics" ? ".4" : "");
+}
+
+function epicHeader(ep){
+  const t = EPIC_TYPE[ep.etype], st = EPIC_STAT[ep.status];
+  return `<div class="epic-head ep-${t.c}">
+    <div class="row">
+      <span class="badge b-${t.c}">${t.e} ${t.l}</span>
+      <span class="id">${ep.id}</span>
+      <span class="badge b-${st.c}">${st.e} ${ep.status}</span>
+    </div>
+    <h2>${inline(ep.title)}</h2>
+    <div class="body">${renderBody(ep.bodyRaw)}</div>
+    ${ep.parent ? `<div class="meta">Part of ${epicRefLink(ep.parent)}</div>` : ""}
+  </div>`;
+}
+
+// --- list view (whole backlog) -------------------------------------------
+function renderList(){
+  detailBar.classList.add("hide");
+  document.title = "TaskBridge Backlog";
+  const f = filters();
+  dimControls(f);
+
+  let html = "", shown = 0;
+  if (f.view !== "triaged"){
+    const es = selectEpics(DATA.epics, f);
+    if (f.view === "all" && es.length) html += groupH("Epics");
+    html += es.map(epicCard).join("");
+    shown += es.length;
+    if (f.view === "epics" && !es.length) html += emptyP("No epics match the filter.");
+  }
+  if (f.view !== "epics"){
+    const its = selectItems(DATA.items, f);
+    if (f.view === "all" && its.length) html += groupH("Triaged items");
+    if (f.view === "triaged" && f.sort !== "id"){
+      const groupKey = it => f.sort==="status" ? it.status : f.sort==="severity" ? SEV[it.sev].l : it.type;
+      let last = null;
+      for (const it of its){
+        const g = groupKey(it);
+        if (g !== last){ html += groupH(g); last = g; }
+        html += findingCard(it);
+      }
+    } else {
+      html += its.map(findingCard).join("");
+    }
+    shown += its.length;
+    if (f.view === "triaged" && !its.length) html += emptyP("No findings match the filters.");
+  }
+
+  list.innerHTML = html || emptyP("Nothing to show.");
+  countEl.textContent = `${shown} shown · ${DATA.epics.length} epics · ${DATA.items.length} triaged`;
+}
+
+// --- epic detail view (header always shown; filters scope the children) ---
+function renderDetail(ep){
+  detailBar.classList.remove("hide");
+  document.title = `${ep.id} — TaskBridge Backlog`;
+  const f = filters();
+  dimControls(f);
+
+  const kids = childrenOf.get(ep.id) || [];
+  const subEpics = kids.filter(k => k.kind === "epic");
+  const triaged  = kids.filter(k => k.kind === "triaged");
+
+  let html = epicHeader(ep), shown = 0;
+  if (f.view !== "triaged"){
+    const es = selectEpics(subEpics, f);
+    html += `<div class="sec-h">Sub-epics (${es.length})</div>`;
+    html += es.length ? es.map(epicCard).join("") : emptyP("No sub-epics.");
+    shown += es.length;
+  }
+  if (f.view !== "epics"){
+    const its = selectItems(triaged, f);
+    html += `<div class="sec-h">Triaged items (${its.length})</div>`;
+    html += its.length ? its.map(findingCard).join("") : emptyP("No triaged items.");
+    shown += its.length;
+  }
+
+  list.innerHTML = html;
+  $("src").textContent = `· epic ${ep.id}`;
+  countEl.textContent = `${shown} shown in ${ep.id}`;
+}
+
+// --- routing -------------------------------------------------------------
+function render(){
+  const epicId = new URLSearchParams(location.search).get("epic");
+  const node = epicId ? byId.get(epicId) : null;
+  if (node && node.kind === "epic") renderDetail(node);
+  else renderList();
+}
+
+const $ = id => document.getElementById(id);
+const fT=$("fType"), fS=$("fStatus"), fSv=$("fSev"), sortSel=$("sort"),
+      qIn=$("q"), list=$("list"), countEl=$("count"), notice=$("notice"),
+      listControls=$("listControls"), detailBar=$("detailBar");
+
+const state = { view: "all" };
+const viewButtons = [...document.querySelectorAll("[data-view]")];
+function setView(v){
+  state.view = v;
+  viewButtons.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.view === v)));
+  render();
+}
+viewButtons.forEach(b => b.addEventListener("click", () => setView(b.dataset.view)));
+[fT,fS,fSv,sortSel].forEach(el => el.addEventListener("change", render));
+qIn.addEventListener("input", render);
+
+// Client-side same-tab navigation for [data-nav] links: no reload, so the parsed data
+// stays in memory (and on file:// the file is never re-picked). A modified click
+// (⌘/Ctrl/Shift/Alt or middle button) falls through to the browser's native handling,
+// so "open link in new tab" from the context menu still works.
+document.addEventListener("click", e => {
+  const a = e.target.closest("a[data-nav]");
+  if (!a || e.defaultPrevented || e.button !== 0 ||
+      e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  e.preventDefault();
+  history.pushState({}, "", a.getAttribute("href"));
+  render();
+  window.scrollTo(0, 0);
+});
+window.addEventListener("popstate", render);
+
+function load(md, src){
+  DATA = parse(md);
+  index();
+  $("src").textContent = `· ${DATA.epics.length} epics · ${DATA.items.length} triaged${src?` · ${src}`:""}`;
+  notice.classList.add("hide");
+  viewButtons.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.view === state.view)));
+  render();
+}
+
+fetch("Backlog.md").then(r => { if(!r.ok) throw 0; return r.text(); })
+  .then(t => load(t, "Backlog.md"))
+  .catch(() => {
+    notice.classList.remove("hide");
+    $("file").addEventListener("change", e => {
+      const f = e.target.files[0]; if(!f) return;
+      f.text().then(t => load(t, f.name));
+    });
+  });
+</script>
+</body>
+</html>
