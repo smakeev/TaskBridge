@@ -371,15 +371,21 @@ function renderList(){
 
   let html = "", shown = 0;
   if (f.view !== "triaged"){
-    const es = selectEpics(DATA.epics, f);
+    // Only top-level epics here; sub-epics are reached via their parent's card/detail.
+    // When searching, also surface matching sub-epics so they stay findable.
+    const pool = f.q ? DATA.epics : DATA.epics.filter(e => !e.parent);
+    const es = selectEpics(pool, f);
     if (f.view === "all" && es.length) html += groupH("Epics");
     html += es.map(epicCard).join("");
     shown += es.length;
     if (f.view === "epics" && !es.length) html += emptyP("No epics match the filter.");
   }
   if (f.view !== "epics"){
-    const its = selectItems(DATA.items, f);
-    if (f.view === "all" && its.length) html += groupH("Triaged items");
+    // Only unbound triaged items here; ones that belong to an epic live inside that epic.
+    // When searching, also surface matching bound items so they stay findable.
+    const pool = f.q ? DATA.items : DATA.items.filter(it => !it.parent);
+    const its = selectItems(pool, f);
+    if (f.view === "all" && its.length) html += groupH("Triaged items (no epic)");
     if (f.view === "triaged" && f.sort !== "id"){
       const groupKey = it => f.sort==="status" ? it.status : f.sort==="severity" ? SEV[it.sev].l : it.type;
       let last = null;
@@ -392,7 +398,9 @@ function renderList(){
       html += its.map(findingCard).join("");
     }
     shown += its.length;
-    if (f.view === "triaged" && !its.length) html += emptyP("No findings match the filters.");
+    if (f.view === "triaged" && !its.length)
+      html += emptyP(f.q ? "No findings match the filters."
+                          : "Every triaged item belongs to an epic — open an epic to see them.");
   }
 
   list.innerHTML = html || emptyP("Nothing to show.");

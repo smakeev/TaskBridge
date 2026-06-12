@@ -118,6 +118,27 @@ A short summary is at the bottom.
   added under it over time, and it is not closed just because individual findings are.
   All current findings belong to this epic.
 
+- **STORY-1 ✨ · 🔓 Open — Add a task from a template at any level, not just the root.**
+  Today a template can only be applied at the Tasks root. This story lets the user apply
+  a template under *any* existing task. On the Templates tab, choosing a template first
+  shows the current task tree (reusing the existing Tasks UI in a non-editable mode) so
+  the user can pick the target parent — or the root; the template's tasks are then created
+  under that parent. After applying, the Tasks tab navigates along the *full path* to the
+  new subtree's parent (root → … → parent) rather than always landing on the root. Spans
+  **Core** (apply under an arbitrary parent), the shared **Common** UI (the read-only
+  picker + the path navigation), and both platforms. The post-apply path navigation lives
+  on the platform layer today; whether it should move into Core is the sub-epic TASK-2.
+
+- **TASK-2 🛠️ · 🔓 Open — INVESTIGATE: can the post-apply path navigation move into Core?**
+  → Epic: STORY-1
+  The "navigate Tasks along the full path to the applied template's parent" work
+  (Common-7 / iOS-15 / And-14) sits in the platform layer today. Investigate whether it
+  can be hoisted into Core so both platforms share one implementation — e.g. Core emits
+  the resolved target path and the platforms just follow it — or whether the native
+  navigation stacks make that impractical. Deliverable is a decision + recommendation; no
+  code change is promised here, so there are no triaged items under it until the
+  investigation concludes.
+
 ---
 
 ## Common (iOS + Android)
@@ -208,6 +229,35 @@ aligned.
   release-on-demand sharing as iOS (a weak / ref-counted cache, or per-VM ownership)
   to finish the model. The "caches → Core manager" rule should also be documented so a
   future caching repository doesn't reintroduce per-repository state.
+
+- **Common-5 🟠 · 🔓 Open — Templates tab: pick the target task via a read-only task tree before applying.**
+  → Epic: STORY-1
+  When the user chooses to apply a template, present the current task tree on the
+  Templates tab (reusing the existing Tasks UI) so they can select which task to add the
+  template under — or the root. Selection only: tapping a row chooses it as the target; no
+  rename / reminder / add-subtask / delete affordances are shown (that non-editable
+  behaviour is Common-6). Confirming applies the template under the chosen parent (Core-13)
+  and then triggers the path navigation (Common-7).
+  → Platform entries: iOS-13, And-12.
+
+- **Common-6 🟠 · 🔓 Open — Add a non-editable mode to the shared task-tree UI.**
+  → Epic: STORY-1
+  The task / subtask row UI is already shared (per Common-3). Add an `editable` flag (or an
+  explicit "selection" mode) so the same components can render with no mutation
+  affordances — no rename, no reminder, no add-subtask, no delete — exposing only row
+  selection. This is what lets the template target-picker (Common-5) reuse the real task
+  UI without letting the user change the tree while choosing where to apply.
+  → Platform entries: iOS-14, And-13.
+
+- **Common-7 🟠 · 🔓 Open — After applying a template, navigate Tasks along the full path to the target parent.**
+  → Epic: STORY-1
+  Applying a template currently always navigates the Tasks tab to the root. With templates
+  now applied under an arbitrary parent (Core-13), navigation must instead walk the full
+  path root → … → target parent so the user lands on the level where the new tasks were
+  added — the whole path is pushed (not a direct deep-link to a leaf) so Back works
+  naturally. Whether this path-walk belongs in the platform layer or in Core is the
+  subject of TASK-2.
+  → Platform entries: iOS-15, And-14.
 
 ---
 
@@ -321,6 +371,23 @@ aligned.
   it omits the `hasLoaded` guard used by `loadTasks` / `loadReminders`, so its
   `loadTemplates()` can fire redundantly. Align the conventions.
 
+- **iOS-13 🟠 · 🔓 Open — Template target picker (see Common-5).**
+  → Epic: STORY-1
+  → See **Common-5** for the full description. iOS: present the read-only task tree in the
+  Templates apply flow (reuse `TasksRootView` / the shared row views in selection mode) to
+  choose the apply target.
+
+- **iOS-14 🟠 · 🔓 Open — Non-editable task-tree mode (see Common-6).**
+  → Epic: STORY-1
+  → See **Common-6** for the full description. iOS: thread an `editable` / selection flag
+  through the shared SwiftUI task row components and `TaskActionSheets` so the mutation
+  affordances are hidden.
+
+- **iOS-15 🟠 · 🔓 Open — Navigate to the applied template's level (see Common-7).**
+  → Epic: STORY-1
+  → See **Common-7** for the full description. iOS: push the full `NavigationStack` path to
+  the target parent after apply instead of resetting to the Tasks root.
+
 ---
 
 ## Android
@@ -430,6 +497,23 @@ aligned.
   never fire on Android (iOS uses real `UNUserNotificationCenter`). JSON
   encode/decode also happens on the calling coroutine’s thread. Implement real
   scheduling and move (de)serialization off the main dispatcher.
+
+- **And-12 🟠 · 🔓 Open — Template target picker (see Common-5).**
+  → Epic: STORY-1
+  → See **Common-5** for the full description. Android: render the read-only task tree in
+  the Templates apply flow (reuse the Compose task list / `TasksRootScreen` rows in
+  selection mode) to choose the apply target.
+
+- **And-13 🟠 · 🔓 Open — Non-editable task-tree mode (see Common-6).**
+  → Epic: STORY-1
+  → See **Common-6** for the full description. Android: thread an `editable` / selection
+  flag through the shared Compose task rows and `TaskActionDialogs` so the mutation
+  affordances are hidden.
+
+- **And-14 🟠 · 🔓 Open — Navigate to the applied template's level (see Common-7).**
+  → Epic: STORY-1
+  → See **Common-7** for the full description. Android: navigate the back stack along the
+  full path to the target parent after apply instead of resetting to the Tasks root.
 
 ---
 
@@ -586,6 +670,14 @@ Analysis of the shared Kotlin module only (`Core/src/commonMain/**`).
   service `StateFlow`. `useCases.get(...)` and the story getters already build a fresh
   instance per call, so the whole chain above the services is now genuinely transient
   and released with the repository.
+
+- **Core-13 🟠 · 🔓 Open — Apply a template under an arbitrary parent, not only the root.**
+  → Epic: STORY-1
+  The template-apply flow (templates interactor → use case → story → `TasksService`)
+  currently creates the template's tasks at the root. Extend it to accept a target parent
+  (task id / parent path) and graft the template subtree under that node, keeping the
+  current root behaviour when no parent is supplied. This is the Core half of STORY-1 that
+  the Common-5 picker drives, and it produces the target path that Common-7 navigates to.
 
 ---
 
