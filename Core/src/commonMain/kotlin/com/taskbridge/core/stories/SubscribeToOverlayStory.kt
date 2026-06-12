@@ -13,7 +13,7 @@ internal class SubscribeToOverlayStory(
     private val assembler: CoreAssembler
 ) {
     operator fun invoke(): Flow<NavigationOverlay?> {
-        val appStateService = assembler.stories.getAppStateService(assembler)()
+        val appStateService = assembler.services.appStateService()
         return appStateService.data
             .map { it.navigationState.overlay }
             .distinctUntilChanged()

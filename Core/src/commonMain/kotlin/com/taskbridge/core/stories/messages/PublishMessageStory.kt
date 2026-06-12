@@ -1,12 +1,12 @@
 package com.taskbridge.core.stories.messages
 
+import com.taskbridge.core.composition.CoreAssembler
 import com.taskbridge.core.messages.internal.CoreMessage
-import com.taskbridge.core.services.messages.MessagesService
 
 internal class PublishMessageStory(
-    private val messagesService: MessagesService
+    private val assembler: CoreAssembler
 ) {
     suspend fun publish(message: CoreMessage) {
-        messagesService.publish(message)
+        assembler.services.messagesService().publish(message)
     }
 }

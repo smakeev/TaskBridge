@@ -8,7 +8,7 @@ internal class PushDestinationStory(
     private val assembler: CoreAssembler
 ) {
     suspend operator fun invoke(destination: NavigationDestination) {
-        val appStateService = assembler.stories.getAppStateService(assembler)()
+        val appStateService = assembler.services.appStateService()
         appStateService.sendCommand(AppStateCommand.PushDestination(destination))
     }
 }

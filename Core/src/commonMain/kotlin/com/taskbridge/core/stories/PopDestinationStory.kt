@@ -7,7 +7,7 @@ internal class PopDestinationStory(
     private val assembler: CoreAssembler
 ) {
     suspend operator fun invoke() {
-        val appStateService = assembler.stories.getAppStateService(assembler)()
+        val appStateService = assembler.services.appStateService()
         appStateService.sendCommand(AppStateCommand.PopDestination)
     }
 }

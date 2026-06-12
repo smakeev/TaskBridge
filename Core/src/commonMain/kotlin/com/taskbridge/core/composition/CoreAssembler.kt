@@ -30,7 +30,10 @@ internal class CoreAssembler(
     val services = CoreServiceLocator(
         platformDependencies = platformDependencies,
         reminderHandler = platformHandlers.reminderHandler,
-        reminderEvents = buses.reminderEvents
+        reminderEvents = buses.reminderEvents,
+        // Safe forward reference: the locator only touches `assembler` inside its lazy
+        // service builders, which run after this constructor completes.
+        assembler = this
     )
     val stories = UserStoriesContainer()
     val useCases = UseCaseContainer()

@@ -542,12 +542,12 @@ Analysis of the shared Kotlin module only (`Core/src/commonMain/**`).
 
 - **Core-2 🟠 · ✅ Closed-Fixed — Initial reminders sync can be dropped (replay=0 bus race).**
   → Epic: TASK-1
-  `RemindersService.init` used to launch two coroutines on the same scope: one collected
-  `reminderEvents.events()`, the other emitted the initial `RemindersUpdated`.
-  `CoreEventBus` is a `MutableSharedFlow(replay = 0, …)`, so if the emitter ran before
-  the collector had subscribed, the initial event was lost and the reminder list stayed
-  empty until a manual `loadReminders()`. It self-healed because the view models call
-  `loadReminders()` on screen appear, but it was a real startup ordering race.
+  `RemindersService.init` launches two coroutines on the same scope: one collects
+  `reminderEvents.events()`, the other emits the initial `RemindersUpdated`.
+  `CoreEventBus` is a `MutableSharedFlow(replay = 0, …)`, so if the emitter runs before
+  the collector has subscribed, the initial event is lost and the reminder list stays
+  empty until a manual `loadReminders()`. It self-heals because the view models call
+  `loadReminders()` on screen appear, but it is a real startup ordering race.
   **Fix:** took the second remedy this entry proposed — `init` now runs a single
   coroutine that calls `runInitialSync()` (fetch `getAllReminders()` and write state
   *directly* via `handleRemindersUpdate`, no bus round-trip) and *then* subscribes to
@@ -561,7 +561,7 @@ Analysis of the shared Kotlin module only (`Core/src/commonMain/**`).
   deliberately as the re-poll path for out-of-band changes the handler never emits for —
   e.g. an iOS notification firing and dropping out of `pendingNotificationRequests()`.)
 
-- **Core-3 🟠 · 🔓 Open — Non-atomic read-then-clear in `consumeNavigationDestinationMessage`.**
+- **Core-3 🟠 · ✅ Closed-Fixed — Non-atomic read-then-clear in `consumeNavigationDestinationMessage`.**
   → Epic: TASK-1
   `PushNavigationUseCase.consumeNavigationDestinationMessage` reads the pending message
   via `FetchNavigationDestinationMessageStory` (which reads `appStateService.data`
@@ -569,8 +569,18 @@ Analysis of the shared Kotlin module only (`Core/src/commonMain/**`).
   queued* `SetNavigationDestinationMessage(null)` command. The read-check-clear is not
   atomic and skips the actor serialization the rest of `AppStateService` relies on: a
   `set(message)` that lands between the read and the clear is silently wiped, and two
-  callers can observe the same message before either clear is processed. Make consume a
-  single command whose reducer reads and clears atomically inside `AppStateService`.
+  callers can observe the same message before either clear is processed.
+  **Fix:** collapsed read-check-clear into a single command. New
+  `AppStateCommand.ConsumeNavigationDestinationMessage(scopeId, result)` carries a
+  `CompletableDeferred`; its handler reads the message, and if `scopeId` matches, returns
+  it via the deferred and clears it (`navigationDestinationMessage = null`) in the same
+  `updateState` reducer step, else completes with null and leaves it intact — so no
+  concurrent `set`/`consume` can interleave between read and clear. Added
+  `ConsumeNavigationDestinationMessageStory` (sends the command, awaits the deferred);
+  `PushNavigationUseCase` now delegates to it. Removed `FetchNavigationDestinationMessageStory`
+  (the actor-bypassing `data.first()` read) and its container getter. Public
+  `NavigationInteractor` / use-case signatures unchanged, so iOS/Android need no changes.
+  `:Core:compileDebugKotlinAndroid` passes.
 
 ### Logical problems
 
@@ -679,6 +689,41 @@ Analysis of the shared Kotlin module only (`Core/src/commonMain/**`).
   current root behaviour when no parent is supplied. This is the Core half of STORY-1 that
   the Common-5 picker drives, and it produces the target path that Common-7 navigates to.
 
+- **Core-14 🟡 · 🔓 Open — Stories depend on the whole `CoreAssembler` (service-locator pattern); consider a narrower seam.**
+  → Epic: TASK-1
+  **What we have now.** Every user story takes `private val assembler: CoreAssembler`
+  and reaches its collaborators through it — `assembler.services.appStateService()`,
+  `assembler.services.tasksService()`, etc. This was made uniform on purpose (previously
+  two messages stories were constructor-injected with `MessagesService` while the rest
+  used the assembler, and there was a `GetAppStateServiceStory` wrapper — both removed).
+  `PublishMessageStory` is special because it is also wired *inside* `CoreServiceLocator`
+  (it is handed to `TasksService` / `RemindersService` at construction). The locator has
+  no assembler of its own, so it now holds a **back-reference**: `CoreAssembler` passes
+  `assembler = this` into `CoreServiceLocator`, and the locator sources the story via
+  `assembler.stories.publishMessage(assembler)`. That forward `this` is safe only because
+  every service builder in the locator is `by lazy`, so `assembler` is dereferenced after
+  construction completes.
+  **The problem.** Taking the entire assembler is the service-locator pattern: a story's
+  dependencies are *hidden* (the constructor says `CoreAssembler`; you must read the body
+  to learn it only touches `appStateService`), and unit-testing a story means standing up
+  an assembler/locator graph instead of passing one fake service. Separately, the
+  assembler ⇄ locator cycle is a latent footgun — its safety rests on the "keep every
+  service builder lazy" invariant, which is not compiler-enforced; an eager builder (or
+  any access to `assembler.stories` / `assembler.services` during locator construction)
+  would recurse / NPE. This is a deliberately-accepted trade (uniformity over
+  explicitness), not a defect — captured here so it is a conscious choice. Related to the
+  pass-through-layering note in Core-8.
+  **Possible solution (provider seam).** Instead of giving the locator the whole
+  assembler, give it exactly what it needs — a provider lambda, e.g.
+  `CoreServiceLocator(…, publishMessageStory = { stories.publishMessage(this) })`. The
+  locator then declares a single dependency ("a way to get a `PublishMessageStory`")
+  rather than god-access to the assembler; it still captures `this` lazily (same safety
+  story), but the dependency surface is honest. A larger alternative — if we want *no*
+  service→story→service reach at all — is to publish messages over a `CoreEventBus` that
+  `MessagesService` subscribes to (mirroring the reminders flow), removing
+  `PublishMessageStory` from the service layer entirely. Think about which is worth it
+  before acting; the provider tweak is the cheap incremental win.
+
 ---
 
 ## Summary
@@ -712,9 +757,8 @@ scroll/dialog wiring (**And-7** → **Common-3**) is now fixed; the duplicate `r
 `forceLoadTemplates` (**And-5** → **Common-2**), inline FQNs (**And-9**), and a
 per-recomposition tree walk (**And-11**).
 
-**Core.** With **Core-1**, **Core-2**, and **Core-12** fixed, the open concurrency issue is
-**Core-3**
-(read-then-clear of the navigation message bypasses the actor and isn’t atomic).
+**Core.** With **Core-1**, **Core-2**, **Core-3**, and **Core-12** fixed, the open
+concurrency issues are addressed; the remaining open work is led by
 **Core-4** (remote loads serialized by the command loop) and **Core-9** (no `close()`
 → scope + `HttpClient` leak) are the notable design issues; the rest is type-safety
 around the untyped `RemoteResourceEntry.data` (**Core-7**), the pass-through layering

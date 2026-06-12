@@ -13,7 +13,6 @@ import com.taskbridge.core.services.remote.RemoteResourceService
 import com.taskbridge.core.services.reminders.RemindersService
 import com.taskbridge.core.services.tasks.TasksService
 import com.taskbridge.core.storage.tasks.*
-import com.taskbridge.core.stories.messages.PublishMessageStory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -26,7 +25,11 @@ import kotlinx.datetime.Clock
 internal class CoreServiceLocator(
     private val platformDependencies: PlatformDependencies,
     private val reminderHandler: ReminderHandler,
-    private val reminderEvents: CoreEventBus<ReminderEvent>
+    private val reminderEvents: CoreEventBus<ReminderEvent>,
+    // Back-reference to the owning assembler. Only dereferenced inside the `by lazy`
+    // service builders below — i.e. after the assembler is fully constructed — so the
+    // forward reference is safe (see CoreAssembler).
+    private val assembler: CoreAssembler
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -76,7 +79,7 @@ internal class CoreServiceLocator(
         TasksService(
             scope = scope,
             storageManager = taskStorageManagerInstance,
-            publishMessageStory = PublishMessageStory(messagesServiceInstance)
+            publishMessageStory = assembler.stories.publishMessage(assembler)
         )
     }
 
@@ -85,7 +88,7 @@ internal class CoreServiceLocator(
             scope = scope,
             reminderHandler = reminderHandler,
             reminderEvents = reminderEvents,
-            publishMessageStory = PublishMessageStory(messagesServiceInstance)
+            publishMessageStory = assembler.stories.publishMessage(assembler)
         )
     }
 

@@ -13,7 +13,7 @@ internal class SubscribeToNavigationStory(
     private val assembler: CoreAssembler
 ) {
     operator fun invoke(): Flow<NavigationState> {
-        val appStateService = assembler.stories.getAppStateService(assembler)()
+        val appStateService = assembler.services.appStateService()
         return appStateService.data
             .map { it.navigationState }
             .distinctUntilChanged()

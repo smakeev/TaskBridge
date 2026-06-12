@@ -34,14 +34,8 @@ internal class PushNavigationUseCase(
     suspend fun consumeNavigationDestinationMessage(
         scopeId: String
     ): NavigationDestinationMessage? {
-        val fetchStory = assembler.stories.fetchNavigationDestinationMessage(assembler)
-        val state = fetchStory()
-        val message = state.navigationDestinationMessage ?: return null
-        if (message.scopeId != scopeId) return null
-
-        // reset navigation message is current message is for us.
-        val setStory = assembler.stories.setNavigationDestinationMessage(assembler)
-        setStory(null)
-        return message
+        // Atomic read-check-clear inside AppStateService (see Core-3).
+        val story = assembler.stories.consumeNavigationDestinationMessage(assembler)
+        return story(scopeId)
     }
 }

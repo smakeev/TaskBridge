@@ -1,5 +1,6 @@
 package com.taskbridge.core.services.appstate
 
+import com.taskbridge.core.models.navigation.NavigationDestinationMessage
 import com.taskbridge.core.models.navigation.NavigationState
 import com.taskbridge.core.services.common.BaseStatefulService
 import kotlinx.coroutines.CoroutineScope
@@ -45,6 +46,23 @@ internal class AppStateService(
                 updateState { currentData ->
                     currentData.copy(navigationDestinationMessage = command.message)
                 }
+            }
+            is AppStateCommand.ConsumeNavigationDestinationMessage -> {
+                // Read-check-clear in one reducer step so no concurrent set/consume can
+                // slip between the read and the clear (Core-3). The command loop is the
+                // sole writer, so the captured value reflects the committed state.
+                var consumed: NavigationDestinationMessage? = null
+                updateState { currentData ->
+                    val message = currentData.navigationDestinationMessage
+                    if (message != null && message.scopeId == command.scopeId) {
+                        consumed = message
+                        currentData.copy(navigationDestinationMessage = null)
+                    } else {
+                        consumed = null
+                        currentData
+                    }
+                }
+                command.result.complete(consumed)
             }
         }
     }

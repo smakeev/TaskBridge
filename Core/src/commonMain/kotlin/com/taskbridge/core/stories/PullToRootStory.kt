@@ -8,7 +8,7 @@ internal class PullToRootStory(
     private val assembler: CoreAssembler
 ) {
     suspend operator fun invoke(tab: AppTab) {
-        val appStateService = assembler.stories.getAppStateService(assembler)()
+        val appStateService = assembler.services.appStateService()
         appStateService.sendCommand(AppStateCommand.PullToRoot(tab))
     }
 }

@@ -1,13 +1,13 @@
 package com.taskbridge.core.stories.messages
 
+import com.taskbridge.core.composition.CoreAssembler
 import com.taskbridge.core.messages.internal.CoreMessage
-import com.taskbridge.core.services.messages.MessagesService
 import kotlinx.coroutines.flow.Flow
 
 internal class ObserveMessagesStory(
-    private val messagesService: MessagesService
+    private val assembler: CoreAssembler
 ) {
     fun observe(): Flow<CoreMessage> {
-        return messagesService.messages()
+        return assembler.services.messagesService().messages()
     }
 }

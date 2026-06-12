@@ -22,10 +22,8 @@ internal class UserStoriesContainer {
     fun setNavigationDestinationMessage(assembler: CoreAssembler): SetNavigationDestinationMessageStory =
         SetNavigationDestinationMessageStory(assembler)
 
-    fun fetchNavigationDestinationMessage(assembler: CoreAssembler): FetchNavigationDestinationMessageStory =
-        FetchNavigationDestinationMessageStory(assembler)
-
-    fun getAppStateService(assembler: CoreAssembler): GetAppStateServiceStory = GetAppStateServiceStory(assembler)
+    fun consumeNavigationDestinationMessage(assembler: CoreAssembler): ConsumeNavigationDestinationMessageStory =
+        ConsumeNavigationDestinationMessageStory(assembler)
 
     fun subscribeToNavigation(assembler: CoreAssembler): SubscribeToNavigationStory = SubscribeToNavigationStory(assembler)
 
@@ -58,8 +56,8 @@ internal class UserStoriesContainer {
     fun observeReminders(assembler: CoreAssembler): ObserveRemindersStory = ObserveRemindersStory(assembler)
 
     fun publishMessage(assembler: CoreAssembler): PublishMessageStory =
-        PublishMessageStory(assembler.services.messagesService())
+        PublishMessageStory(assembler)
 
     fun observeMessages(assembler: CoreAssembler): ObserveMessagesStory =
-        ObserveMessagesStory(assembler.services.messagesService())
+        ObserveMessagesStory(assembler)
 }

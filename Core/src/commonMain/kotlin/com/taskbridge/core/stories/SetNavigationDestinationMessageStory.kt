@@ -8,7 +8,7 @@ internal class SetNavigationDestinationMessageStory(
     private val assembler: CoreAssembler
 ) {
     suspend operator fun invoke(message: NavigationDestinationMessage?) {
-        val appStateService = assembler.stories.getAppStateService(assembler)()
+        val appStateService = assembler.services.appStateService()
         appStateService.sendCommand(AppStateCommand.SetNavigationDestinationMessage(message))
     }
 }
