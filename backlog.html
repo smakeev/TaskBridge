@@ -79,8 +79,11 @@
   /* epic refs / links */
   a { color:var(--accent); }
   .epic-ref { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-weight:700;
-              text-decoration:none; border-bottom:1px dotted currentColor; }
-  .epic-ref::after { content:" ↗"; font-weight:400; font-size:.85em; opacity:.75; }
+              text-decoration:none; border-bottom:1px dotted currentColor; cursor:pointer; }
+  .ref { color:var(--accent); text-decoration:none; border-bottom:1px dotted currentColor;
+         cursor:pointer; }
+  @keyframes flashbg { from { background:rgba(110,168,254,.32); } to { background:transparent; } }
+  .flash { animation: flashbg 1.3s ease-out; }
   .meta { margin-top:8px; display:flex; flex-wrap:wrap; gap:8px; align-items:center;
           color:var(--muted); font-size:12px; }
   .chip { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:11px;
@@ -212,9 +215,12 @@ function parse(md){
 
 function esc(s){ return s.replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
 function inline(s){
-  return esc(s)
-    .replace(/`([^`]+)`/g, "<code>$1</code>")
-    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  // Protect inline-code spans, apply bold, linkify item/epic ids, then restore code.
+  const codes = [];
+  let t = esc(s).replace(/`([^`]+)`/g, (_, c) => { codes.push(c); return `CODESPAN${codes.length-1}CODESPAN`; });
+  t = t.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  t = linkifyIds(t);
+  return t.replace(/CODESPAN(\d+)CODESPAN/g, (_, i) => `<code>${codes[+i]}</code>`);
 }
 function renderBody(raw){
   if (!raw) return "";
@@ -243,17 +249,31 @@ function index(){
 }
 
 // --- shared renderers ----------------------------------------------------
-function epicRefLink(id){
-  const ep = byId.get(id);
-  const label = ep ? `${EPIC_TYPE[ep.etype].e} ${id}` : id;
-  // Plain same-tab link (data-nav → client-side routing). Right-click / ⌘-click still
-  // opens it in a new tab via the browser's own menu.
-  return `<a class="epic-ref" data-nav href="?epic=${encodeURIComponent(id)}">${label}</a>`;
+// Any id token appearing in prose (e.g. "Platform entries: iOS-4, And-8") becomes a
+// one-way ref link — but only if that id actually exists, so stray text isn't linked.
+const ID_RE = /\b(?:Common|iOS|And|Core|TASK|STORY|BUG)-\d+\b/g;
+function linkifyIds(html){
+  return html.replace(ID_RE, m => byId.has(m) ? refLink(m) : m);
+}
+
+// A cross-reference: scroll to the target if it is on the page, else open its detail
+// (handled by the global click listener). One-way — the target shows no back-reference.
+function refLink(id){
+  const n = byId.get(id);
+  if (!n) return id;
+  const cls = n.kind === "epic" ? "epic-ref" : "ref";
+  return `<a class="${cls}" data-ref="${id}" href="?id=${encodeURIComponent(id)}">${id}</a>`;
+}
+
+// An "open this" link (the clickable id heading of an epic card): always navigates to
+// the detail, even when the card is already on screen.
+function openLink(id, label){
+  return `<a class="epic-ref" data-nav href="?id=${encodeURIComponent(id)}">${label}</a>`;
 }
 
 function findingCard(it){
   const sev = SEV[it.sev], st = STAT[it.status];
-  return `<div class="card sev-${sev.c}${it.status.startsWith("Closed")?" closed":""}">
+  return `<div class="card sev-${sev.c}${it.status.startsWith("Closed")?" closed":""}" id="node-${it.id}">
     <div class="row">
       <span class="badge type">${it.type}</span>
       <span class="id">${it.id}</span>
@@ -263,7 +283,7 @@ function findingCard(it){
     </div>
     ${it.resolution ? `<div class="resolution">“${esc(it.resolution)}”</div>` : ""}
     <div class="body">${renderBody(it.bodyRaw)}</div>
-    ${it.parent ? `<div class="meta">Part of ${epicRefLink(it.parent)}</div>` : ""}
+    ${it.parent ? `<div class="meta">Part of ${refLink(it.parent)}</div>` : ""}
   </div>`;
 }
 
@@ -273,18 +293,18 @@ function epicCard(ep){
   const subEpics = kids.filter(k => k.kind === "epic");
   const triaged  = kids.filter(k => k.kind === "triaged");
   const contains = `${triaged.length} triaged · ${subEpics.length} sub-epic${subEpics.length===1?"":"s"}`;
-  return `<div class="card ep-${t.c}${ep.status==="Closed"?" closed":""}">
+  return `<div class="card ep-${t.c}${ep.status==="Closed"?" closed":""}" id="node-${ep.id}">
     <div class="row">
       <span class="badge b-${t.c}">${t.e} ${t.l}</span>
-      <span class="id">${epicRefLink(ep.id)}</span>
+      <span class="id">${openLink(ep.id, `${t.e} ${ep.id}`)}</span>
       <span class="badge b-${st.c}">${st.e} ${ep.status}</span>
       <span class="title">${inline(ep.title)}</span>
     </div>
     <div class="body">${renderBody(ep.bodyRaw)}</div>
     <div class="meta">
-      ${ep.parent ? `Part of ${epicRefLink(ep.parent)} ·` : ""}
+      ${ep.parent ? `Part of ${refLink(ep.parent)} ·` : ""}
       Contains ${contains}
-      ${subEpics.map(s => epicRefLink(s.id)).join(" ")}
+      ${subEpics.map(s => refLink(s.id)).join(" ")}
     </div>
   </div>`;
 }
@@ -322,8 +342,10 @@ function selectItems(items, f){
 const groupH = label => `<div class="group-h">${label}</div>`;
 const emptyP = text => `<p class="empty">${text}</p>`;
 function dimControls(f){
-  // type / severity / sort only apply to triaged items
+  // type / severity / sort only apply to triaged items; status applies to both.
+  // This is authoritative, so it also clears any dimming left by the single-item view.
   [fT, fSv, sortSel].forEach(el => el.parentElement.style.opacity = f.view === "epics" ? ".4" : "");
+  fS.parentElement.style.opacity = "";
 }
 
 function epicHeader(ep){
@@ -336,7 +358,7 @@ function epicHeader(ep){
     </div>
     <h2>${inline(ep.title)}</h2>
     <div class="body">${renderBody(ep.bodyRaw)}</div>
-    ${ep.parent ? `<div class="meta">Part of ${epicRefLink(ep.parent)}</div>` : ""}
+    ${ep.parent ? `<div class="meta">Part of ${refLink(ep.parent)}</div>` : ""}
   </div>`;
 }
 
@@ -378,7 +400,7 @@ function renderList(){
 }
 
 // --- epic detail view (header always shown; filters scope the children) ---
-function renderDetail(ep){
+function renderEpicDetail(ep){
   detailBar.classList.remove("hide");
   document.title = `${ep.id} — TaskBridge Backlog`;
   const f = filters();
@@ -407,11 +429,23 @@ function renderDetail(ep){
   countEl.textContent = `${shown} shown in ${ep.id}`;
 }
 
+// --- single triaged-item view (reached only via a ref to an off-page item) --
+function renderItemDetail(it){
+  detailBar.classList.remove("hide");
+  document.title = `${it.id} — TaskBridge Backlog`;
+  // A lone item has nothing to filter; the controls stay visible but inert.
+  [fT, fS, fSv, sortSel].forEach(el => el.parentElement.style.opacity = ".4");
+  list.innerHTML = findingCard(it);
+  $("src").textContent = `· item ${it.id}`;
+  countEl.textContent = "";
+}
+
 // --- routing -------------------------------------------------------------
 function render(){
-  const epicId = new URLSearchParams(location.search).get("epic");
-  const node = epicId ? byId.get(epicId) : null;
-  if (node && node.kind === "epic") renderDetail(node);
+  const id = new URLSearchParams(location.search).get("id");
+  const node = id ? byId.get(id) : null;
+  if (node && node.kind === "epic") renderEpicDetail(node);
+  else if (node && node.kind === "triaged") renderItemDetail(node);
   else renderList();
 }
 
@@ -431,18 +465,43 @@ viewButtons.forEach(b => b.addEventListener("click", () => setView(b.dataset.vie
 [fT,fS,fSv,sortSel].forEach(el => el.addEventListener("change", render));
 qIn.addEventListener("input", render);
 
-// Client-side same-tab navigation for [data-nav] links: no reload, so the parsed data
-// stays in memory (and on file:// the file is never re-picked). A modified click
-// (⌘/Ctrl/Shift/Alt or middle button) falls through to the browser's native handling,
-// so "open link in new tab" from the context menu still works.
-document.addEventListener("click", e => {
-  const a = e.target.closest("a[data-nav]");
-  if (!a || e.defaultPrevented || e.button !== 0 ||
-      e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-  e.preventDefault();
-  history.pushState({}, "", a.getAttribute("href"));
+function navigateTo(href){
+  history.pushState({}, "", href);
   render();
   window.scrollTo(0, 0);
+}
+
+// Same-tab navigation, no reload — the parsed data stays in memory (and on file:// the
+// file is never re-picked). A modified click (⌘/Ctrl/Shift/Alt or middle button) falls
+// through to the browser, so "open link in new tab" from the menu still works.
+//
+// [data-ref] = a cross-reference: scroll to the target if it is on the page right now,
+// otherwise open its detail. [data-nav] = an explicit "open this" / back link.
+document.addEventListener("click", e => {
+  if (e.defaultPrevented || e.button !== 0 ||
+      e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+
+  const ref = e.target.closest("a[data-ref]");
+  if (ref){
+    e.preventDefault();
+    const id = ref.getAttribute("data-ref");
+    const el = document.getElementById(`node-${id}`);
+    if (el){
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.remove("flash");
+      void el.offsetWidth;            // restart the animation if re-clicked
+      el.classList.add("flash");
+    } else {
+      navigateTo(ref.getAttribute("href"));
+    }
+    return;
+  }
+
+  const nav = e.target.closest("a[data-nav]");
+  if (nav){
+    e.preventDefault();
+    navigateTo(nav.getAttribute("href"));
+  }
 });
 window.addEventListener("popstate", render);
 
