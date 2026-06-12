@@ -349,15 +349,25 @@ Analysis of the shared Kotlin module only (`Core/src/commonMain/**`).
   read-modify-write callers can no longer drop updates. Single-call site change in
   `BaseStatefulService.kt`; `:Core:compileDebugKotlinAndroid` passes.
 
-- **Core-2 🟠 · 🔓 Open — Initial reminders sync can be dropped (replay=0 bus race).**
-  `RemindersService.init` launches two coroutines on the same scope: one collects
-  `reminderEvents.events()`, the other emits the initial `RemindersUpdated`.
-  `CoreEventBus` is a `MutableSharedFlow(replay = 0, …)`, so if the emitter runs before
-  the collector has subscribed, the initial event is lost and the reminder list stays
-  empty until a manual `loadReminders()`. It self-heals because the view models call
-  `loadReminders()` on screen appear, but it is a real startup ordering race. Give the
-  bus `replay = 1` for this use, or seed initial state directly instead of
-  round-tripping through the bus.
+- **Core-2 🟠 · ✅ Closed-Fixed — Initial reminders sync can be dropped (replay=0 bus race).**
+  `RemindersService.init` used to launch two coroutines on the same scope: one collected
+  `reminderEvents.events()`, the other emitted the initial `RemindersUpdated`.
+  `CoreEventBus` is a `MutableSharedFlow(replay = 0, …)`, so if the emitter ran before
+  the collector had subscribed, the initial event was lost and the reminder list stayed
+  empty until a manual `loadReminders()`. It self-healed because the view models call
+  `loadReminders()` on screen appear, but it was a real startup ordering race.
+  **Fix:** took the second remedy this entry proposed — `init` now runs a single
+  coroutine that calls `runInitialSync()` (fetch `getAllReminders()` and write state
+  *directly* via `handleRemindersUpdate`, no bus round-trip) and *then* subscribes to
+  `reminderEvents.events()`. The internal initial emit is gone, so there is no event to
+  lose; `runInitialSync` keeps a `try/catch` (rethrowing `CancellationException`) so a
+  failed initial fetch surfaces to `errorMessage` and the collector still subscribes. The
+  now-redundant `hasCompletedInitialSync` flag was removed — initial sync no longer goes
+  through the message-publishing collector, so there is nothing to suppress, and the
+  first real event diffs against the seeded list. (Note: the eager seed makes Core
+  authoritative on startup regardless of UI; the on-appear `loadReminders()` is kept
+  deliberately as the re-poll path for out-of-band changes the handler never emits for —
+  e.g. an iOS notification firing and dropping out of `pendingNotificationRequests()`.)
 
 - **Core-3 🟠 · 🔓 Open — Non-atomic read-then-clear in `consumeNavigationDestinationMessage`.**
   `PushNavigationUseCase.consumeNavigationDestinationMessage` reads the pending message
@@ -463,7 +473,8 @@ Analysis of the shared Kotlin module only (`Core/src/commonMain/**`).
 
 ## Summary
 
-**Resolved so far.** **Core-1** (reminder state data race) ✅, **Core-12** (domain
+**Resolved so far.** **Core-1** (reminder state data race) ✅, **Core-2** (initial
+reminder sync lost on a replay-0 bus race) ✅, **Core-12** (domain
 layer un-pinned for on-demand lifetime) ✅, **And-1** (graph rebuilt on rotation) ✅,
 **iOS-1** 🗒️ closed as by-design (weak scoped lifetime; the model is now written
 up in **Common-4**, with the Android side of it still open), **Common-1**
@@ -491,8 +502,8 @@ scroll/dialog wiring (**And-7** → **Common-3**) is now fixed; the duplicate `r
 `forceLoadTemplates` (**And-5** → **Common-2**), inline FQNs (**And-9**), and a
 per-recomposition tree walk (**And-11**).
 
-**Core.** With **Core-1** and **Core-12** fixed, the open concurrency issues are
-**Core-2** (initial reminder sync lost on a replay-0 bus race) and **Core-3**
+**Core.** With **Core-1**, **Core-2**, and **Core-12** fixed, the open concurrency issue is
+**Core-3**
 (read-then-clear of the navigation message bypasses the actor and isn’t atomic).
 **Core-4** (remote loads serialized by the command loop) and **Core-9** (no `close()`
 → scope + `HttpClient` leak) are the notable design issues; the rest is type-safety

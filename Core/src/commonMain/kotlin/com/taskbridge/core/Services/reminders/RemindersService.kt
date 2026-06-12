@@ -14,7 +14,8 @@ import kotlinx.coroutines.launch
 /**
  * Stateful service for managing reminders.
  * Synchronizes Core state with platform-specific [ReminderHandler] via event-driven updates.
- * All state updates for the reminder list flow through the [ReminderEvent.RemindersUpdated] event.
+ * Initial state is seeded directly from the handler; subsequent updates flow through the
+ * [ReminderEvent.RemindersUpdated] event.
  */
 internal class RemindersService(
     private val scope: CoroutineScope,
@@ -25,90 +26,59 @@ internal class RemindersService(
     initialData = RemindersServiceData(),
     scope = scope
 ) {
-    private var hasCompletedInitialSync = false
-
     init {
-        // Subscribe to incoming reminder events from the platform (or internal sync)
+        // Seed initial state directly, then subscribe to incoming reminder events from the platform
         scope.launch {
+            runInitialSync()
             reminderEvents.events().collect { event ->
                 when (event) {
                     is ReminderEvent.RemindersUpdated -> {
                         println("[TaskBridge][Core][RemindersService] event RemindersUpdated count=${event.reminders.size}")
-                        if (hasCompletedInitialSync) {
-                            publishNewReminderMessages(
-                                previousReminders = data.value.reminders,
-                                updatedReminders = event.reminders
-                            )
-                        } else {
-                            hasCompletedInitialSync = true
-                        }
-                        updateState { it.copy(
-                            reminders = event.reminders,
-                            isLoading = false,
-                            errorMessage = null
-                        ) }
+                        publishNewReminderMessages(
+                            previousReminders = data.value.reminders,
+                            updatedReminders = event.reminders
+                        )
+                        handleRemindersUpdate(event.reminders)
                     }
                 }
             }
         }
+    }
 
-        // Perform initial synchronization by emitting an event into the bus
-        scope.launch {
-            try {
-                val initialReminders = reminderHandler.getAllReminders()
-                println("[TaskBridge][Core][RemindersService] initial sync count=${initialReminders.size}")
-                reminderEvents.emit(ReminderEvent.RemindersUpdated(initialReminders))
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Throwable) {
-                updateState { it.copy(
-                    errorMessage = e.message ?: e::class.simpleName ?: "Initial sync error"
-                ) }
-            }
+    private suspend fun runInitialSync() {
+        try {
+            val initialReminders = reminderHandler.getAllReminders()
+            println("[TaskBridge][Core][RemindersService] initial sync count=${initialReminders.size}")
+            handleRemindersUpdate(initialReminders)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            updateState { it.copy(
+                errorMessage = e.message ?: e::class.simpleName ?: "Initial sync error"
+            ) }
         }
+    }
+
+    private suspend fun handleRemindersUpdate(reminders: List<Reminder>) {
+        updateState { it.copy(
+            reminders = reminders,
+            isLoading = false,
+            errorMessage = null
+        ) }
     }
 
     override suspend fun handleCommand(command: RemindersCommand) {
         when (command) {
-            is RemindersCommand.LoadReminders -> performLoad()
-            is RemindersCommand.ScheduleReminder -> performSchedule(command)
+            is RemindersCommand.LoadReminders -> performAction {
+                val reminders = reminderHandler.getAllReminders()
+                reminderEvents.emit(ReminderEvent.RemindersUpdated(reminders))
+            }
+            is RemindersCommand.ScheduleReminder -> performAction {
+                reminderHandler.scheduleReminder(command.reminder)
+            }
             is RemindersCommand.CancelReminder -> performAction {
                 reminderHandler.cancelReminder(command.reminderId)
             }
-        }
-    }
-
-    private suspend fun performLoad() {
-        println("[TaskBridge][Core][RemindersService] load reminders")
-        updateState { it.copy(isLoading = true, errorMessage = null) }
-        try {
-            val reminders = reminderHandler.getAllReminders()
-            println("[TaskBridge][Core][RemindersService] load result count=${reminders.size}")
-            // Emit update event to maintain single state update path
-            reminderEvents.emit(ReminderEvent.RemindersUpdated(reminders))
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Throwable) {
-            updateState { it.copy(
-                isLoading = false,
-                errorMessage = e.message ?: e::class.simpleName ?: "Load error"
-            ) }
-        }
-    }
-
-    private suspend fun performSchedule(command: RemindersCommand.ScheduleReminder) {
-        println("[TaskBridge][Core][RemindersService] perform schedule")
-        updateState { it.copy(isLoading = true, errorMessage = null) }
-        try {
-            reminderHandler.scheduleReminder(command.reminder)
-            // We do not update state here manually; we wait for the RemindersUpdated event from the handler.
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Throwable) {
-            updateState { it.copy(
-                isLoading = false,
-                errorMessage = e.message ?: e::class.simpleName ?: "Action error"
-            ) }
         }
     }
 
